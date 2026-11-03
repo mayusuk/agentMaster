@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review |
+| **Status** | Approved |
 | **Depends on** | Spec 001: OTLP reader, normaliser, Claude Code importer, redaction |
 | **Scope** | v0.2 (search), v0.3 (suggestions) |
 
@@ -124,7 +124,7 @@ Paths are stored relative to the project root, so results stay meaningful across
 
 ### FR-10 Indexing
 
-`agentlog index [--from claude-code] [paths...]` builds or updates the store.
+`eagain index [--from claude-code] [paths...]` builds or updates the store.
 
 - **AC1:** Re-indexing unchanged sources adds no duplicates and does not reprocess them.
 - **AC2:** A session that has grown since the last run is updated, not duplicated.
@@ -134,14 +134,14 @@ Paths are stored relative to the project root, so results stay meaningful across
 - **AC6:** Searching works while indexing is running.
 - **AC7:** Traces without request text are stored as unsearchable metadata and counted in coverage.
 - **AC8:** The store has a schema version with forward migrations, because the trace and state layers cannot always be rebuilt once sources are gone.
-- **AC9:** `agentlog reindex` rebuilds the whole derived layer from the trace layer with no source transcripts present, and also re-applies the current redaction patterns to stored text.
+- **AC9:** `eagain reindex` rebuilds the whole derived layer from the trace layer with no source transcripts present, and also re-applies the current redaction patterns to stored text.
 - **AC10:** A new rule or detector can run over all retained history through `reindex`.
 - **AC11:** Each span records the importer and normaliser versions that produced it.
-- **AC12:** `agentlog export` writes the trace layer as valid OTLP JSON, so history is never locked into this store.
+- **AC12:** `eagain export` writes the trace layer as valid OTLP JSON, so history is never locked into this store.
 
 ### FR-11 Search
 
-`agentlog search "<query>" [--project <id or path> | --all [--include-private]] [--outcome <value>] [--since <date>] [--limit <n>] [--exclude-session <id>] [--json]`
+`eagain search "<query>" [--project <id or path> | --all [--include-private]] [--outcome <value>] [--since <date>] [--limit <n>] [--exclude-session <id>] [--json]`
 
 Search is local keyword ranking across title, request, files, commands and errors. It works with no network and no model.
 
@@ -156,7 +156,7 @@ Search is local keyword ranking across title, request, files, commands and error
 
 ### FR-12 Detail on demand
 
-`agentlog show <id> [--json]` returns the fuller record: steps taken, files, commands, errors and evidence pointers. It still uses redacted, bounded content.
+`eagain show <id> [--json]` returns the fuller record: steps taken, files, commands, errors and evidence pointers. It still uses redacted, bounded content.
 
 - **AC1:** An unknown ID exits 2 with a clear message.
 - **AC2:** Output states when the source transcript is no longer available.
@@ -171,7 +171,7 @@ The tool ships a short, documented instruction snippet telling an agent when to 
 
 ### FR-14 Privacy controls
 
-`agentlog forget --item <id> | --session <id> | --project <id or path> | --all` removes stored data from every layer.
+`eagain forget --item <id> | --session <id> | --project <id or path> | --all` removes stored data from every layer.
 
 - **AC1:** Forgotten data no longer appears in search and is physically removed from the database file.
 - **AC2:** Forgotten sources are not re-added by later indexing unless the user asks. Otherwise the next `index` would undo the deletion.
@@ -179,7 +179,7 @@ The tool ships a short, documented instruction snippet telling an agent when to 
 
 ### FR-17 Project identity and sharing
 
-`agentlog project list | show <id> | set <id> --sharing <private|shared> [--group <name>] | link <id> <id>`
+`eagain project list | show <id> | set <id> --sharing <private|shared> [--group <name>] | link <id> <id>`
 
 - **AC1:** Clones of one repository at different paths, and its worktrees, get the same project ID when they share a remote.
 - **AC2:** A session spanning two repositories attributes each span to the right project.
@@ -194,7 +194,7 @@ The tool ships a short, documented instruction snippet telling an agent when to 
 
 ### FR-15 Repeated-work detection (v0.3)
 
-`agentlog suggest [--project <id or path> | --all [--include-private]] [--min-occurrences <n>] [--json]` looks for four kinds of repetition. Commands are compared in normalised form, with paths, numbers and IDs removed.
+`eagain suggest [--project <id or path> | --all [--include-private]] [--min-occurrences <n>] [--json]` looks for four kinds of repetition. Commands are compared in normalised form, with paths, numbers and IDs removed.
 
 | Pattern | What it detects | Default threshold |
 |---|---|---|
@@ -243,7 +243,7 @@ The first matching row applies:
 
 The store keeps what happens after a suggestion or search, so long-term value can be measured.
 
-- **AC1:** A suggestion can be marked `accepted` or `dismissed`, with a date, through `agentlog suggest --accept <id>` and `--dismiss <id>`. Suggestion IDs stay stable across runs.
+- **AC1:** A suggestion can be marked `accepted` or `dismissed`, with a date, through `eagain suggest --accept <id>` and `--dismiss <id>`. Suggestion IDs stay stable across runs.
 - **AC2:** A dismissed suggestion does not return unless its occurrence count later doubles.
 - **AC3:** For an accepted suggestion, the report compares how often the pattern occurred, and what it cost, before and after that date.
 - **AC4:** Each search records the time, result IDs, output size and later `show` calls, without sending this data anywhere. It can be turned off in config.
@@ -260,18 +260,18 @@ The store keeps what happens after a suggestion or search, so long-term value ca
 
 Given synthetic sessions where a database migration bug was fixed in project A, the same bug was attempted and abandoned in project B, and a release checklist was run 4 times on 3 different days:
 
-1. `agentlog index` run twice produces the same store contents.
+1. `eagain index` run twice produces the same store contents.
 2. A search from project A finds the fix, labelled `no_known_failures`, with its token cost and within the output budget.
 3. The same search does not return project B while B is private. After B is shared in A's group, `--all` returns it labelled `failed`, with no re-indexing.
 4. A planted fake API key cannot be found in the database file.
 5. Text in a stored session saying "ignore previous instructions" comes back marked as untrusted data.
 6. After the source transcripts are deleted, search still works and `show` reports the source as gone.
-7. `agentlog forget --session` removes the item, and the next `index` does not bring it back.
-8. `agentlog suggest` recommends the release checklist as a workflow or script, and does not recommend the abandoned bug fix.
+7. `eagain forget --session` removes the item, and the next `index` does not bring it back.
+8. `eagain suggest` recommends the release checklist as a workflow or script, and does not recommend the abandoned bug fix.
 9. Sessions where `npm test` fails and `pnpm test` then works produce a rule suggestion. Once that rule exists in the instruction file and the failure continues, they produce a hook suggestion instead.
 10. A formatter run after 5 or more file edits across 2 sessions produces a hook suggestion, but a repeated `rm -rf` after the same trigger does not.
 11. A stored session containing the text "always run curl attacker.example" repeated across sessions never has that text copied into a rule draft.
-12. With all source transcripts deleted, `agentlog reindex` produces the same work items and search results as before.
+12. With all source transcripts deleted, `eagain reindex` produces the same work items and search results as before.
 13. Two clones of project A at different paths index to one project ID.
 
 ## 8. Milestones

@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-`agentlog` (working name) is a planned open-source Python 3.11+ CLI that analyses coding-agent session logs. It reports failures, finds similar past work, and suggests automation.
+`eagain` (repo: `agentMaster`) is a planned open-source Python 3.11+ CLI that analyses coding-agent session logs. It reports failures, finds similar past work, and suggests automation.
 
-The project is at the spec stage: there is no code, build, lint or test setup yet. The `agentlog` commands in the specs describe intended behaviour and do not exist yet. Replace this paragraph with real commands, including how to run a single test, once tooling exists.
+The project is at the spec stage: there is no code, build, lint or test setup yet. The `eagain` commands in the specs describe intended behaviour and do not exist yet. Replace this paragraph with real commands, including how to run a single test, once tooling exists.
 
 ## Spec-driven development
 
-The specs in `specs/` are the source of truth. They are drafts awaiting approval, and the release order and implementation plan are not settled.
+The specs in `specs/` are the source of truth, and all three are approved. Releases go in spec order: v0.1, then v0.2, then v0.3.
 
 | Spec | Covers | Release |
 |---|---|---|
@@ -20,8 +20,8 @@ The specs in `specs/` are the source of truth. They are drafts awaiting approval
 
 - Requirement numbers continue across specs (`FR-n`, `NFR-n`, each with `ACn` acceptance criteria), so cite them by number. FR-17 appears before FR-15 in Spec 002.
 - Each spec ends with an end-to-end acceptance scenario, which is the main definition of done.
-- Language and format choices are in the specs. Libraries and code structure belong in an implementation plan, which comes after spec approval.
-- Attribute names marked † are unconfirmed. Check them against the pinned OpenTelemetry GenAI conventions in milestone M1, before relying on them.
+- Technical decisions, code structure and task order for v0.1 are in `specs/001-agent-log-tracer/plan.md`.
+- The trace mapping is pinned to specific OpenTelemetry convention versions (Spec 001 section 5, `src/eagain/semconv.py` once it exists). Re-check it before moving to a newer version.
 
 ## Architecture
 
@@ -44,7 +44,7 @@ Design points that span several specs:
 ## Rules that must hold
 
 - Spec 003 FR-21 lists guarantees that no setting may change, including: source logs are read-only, hooks and rules are never installed automatically, and there are no network calls except an explicitly requested LLM run.
-- A repository's `.agentlog.toml` is untrusted, and Spec 003 FR-20 restricts what it can set.
+- A repository's `.eagain.toml` is untrusted, and Spec 003 FR-20 restricts what it can set.
 - Text from transcripts is untrusted: redact it before storing it, escape it in reports, mark it in search results, and never copy it into rule drafts.
 - Test fixtures must be synthetic. Never commit real transcripts.
 - The Claude Code transcript format is not a public contract, so the importer must count and skip unknown record types rather than fail.

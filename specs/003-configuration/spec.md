@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review |
+| **Status** | Approved |
 | **Applies to** | Specs 001 and 002 |
 | **Scope** | Config system in v0.1. Capture and retention settings in v0.2. Suggestion settings in v0.3 |
 
@@ -19,9 +19,9 @@ Later sources override earlier ones:
 
 1. Built-in defaults
 2. Preset selected by `preset = "..."`
-3. User config: `~/.config/agentlog/config.toml`, or the path in `AGENTLOG_HOME`
-4. Project config: `.agentlog.toml` at the project root, restricted (FR-20)
-5. Environment variables: `AGENTLOG_<SECTION>_<KEY>`
+3. User config: `~/.config/eagain/config.toml`, or the path in `EAGAIN_HOME`
+4. Project config: `.eagain.toml` at the project root, restricted (FR-20)
+5. Environment variables: `EAGAIN_<SECTION>_<KEY>`
 6. Command-line flags, including `--config <file>` and `--no-project-config`
 
 Files use TOML, which Python 3.11+ can read with no extra dependency. Overrides per project and per tool use tables:
@@ -54,8 +54,8 @@ index = false
 "Applies" says when a change takes effect:
 
 - **Query:** the next command
-- **Reindex:** after `agentlog reindex`
-- **New data:** newly indexed data only. Raising a capture limit cannot restore content that was already cut, unless the source transcript still exists and `agentlog index --backfill` is run
+- **Reindex:** after `eagain reindex`
+- **New data:** newly indexed data only. Raising a capture limit cannot restore content that was already cut, unless the source transcript still exists and `eagain index --backfill` is run
 
 ### Retention
 
@@ -123,10 +123,10 @@ Presets set capture and retention values together, for users who don't want to t
 ### FR-19 Configuration system
 
 - **AC1:** With no config file, every command works using documented defaults.
-- **AC2:** `agentlog config show [--origin]` prints active values and, with `--origin`, the source of each. Secret-like values are never printed.
-- **AC3:** `agentlog config validate` checks types and ranges. Invalid config exits 2, naming the file, key and reason.
+- **AC2:** `eagain config show [--origin]` prints active values and, with `--origin`, the source of each. Secret-like values are never printed.
+- **AC3:** `eagain config validate` checks types and ranges. Invalid config exits 2, naming the file, key and reason.
 - **AC4:** An unknown key produces a warning naming the closest valid key, so a typo cannot silently leave a limit unenforced.
-- **AC5:** `agentlog config init` writes a commented file listing every setting and its default.
+- **AC5:** `eagain config init` writes a commented file listing every setting and its default.
 - **AC6:** Config files have a version field, and older versions keep working or give a clear migration message.
 - **AC7:** Each report and each store record a hash of the settings that affect results. Spec 001's determinism guarantee becomes "same input and same settings".
 - **AC8:** Data that was not captured because of a setting is listed in coverage, and rules relying on it are listed as not evaluated.
@@ -162,7 +162,7 @@ Redaction is configurable within limits:
 
 ### FR-22 Retention
 
-`agentlog prune [--dry-run]` applies retention, and also runs after `index` when `auto_prune` is on.
+`eagain prune [--dry-run]` applies retention, and also runs after `index` when `auto_prune` is on.
 
 `compact` removes data in this order, stopping once the store is within its limits:
 
@@ -171,13 +171,13 @@ Redaction is configurable within limits:
 
 - **AC1:** `--dry-run` shows exactly how many traces and how much space would be affected, and changes nothing.
 - **AC2:** When several limits are set, the strictest one applies.
-- **AC3:** `agentlog pin <item, session or project>` exempts data from retention. If pinned data alone exceeds a limit, the tool warns and deletes nothing pinned.
-- **AC4:** Traces removed by retention are not re-imported by the next `index` from still-existing transcripts. `agentlog index --backfill` brings them back on request.
+- **AC3:** `eagain pin <item, session or project>` exempts data from retention. If pinned data alone exceeds a limit, the tool warns and deletes nothing pinned.
+- **AC4:** Traces removed by retention are not re-imported by the next `index` from still-existing transcripts. `eagain index --backfill` brings them back on request.
 - **AC5:** Reports state when pruning limited the history analysed, and for what date range.
 - **AC6:** Rollups preserve long-term failure and token trends after traces are deleted. `forget` removes rollups too, but retention does not.
 - **AC7:** A per-project retention setting overrides the global one for that project only.
 - **AC8:** Space is reclaimed from the file after pruning, so the store really shrinks.
-- **AC9:** `agentlog store stats` shows size by layer and project, trace counts, date range, compacted and pinned counts, and space used against limits.
+- **AC9:** `eagain store stats` shows size by layer and project, trace counts, date range, compacted and pinned counts, and space used against limits.
 
 ### FR-23 Safe upgrades
 
@@ -191,10 +191,10 @@ Redaction is configurable within limits:
 
 ## 6. End-to-end acceptance scenario
 
-1. With no config, `agentlog index` and `agentlog search` work with the defaults.
+1. With no config, `eagain index` and `eagain search` work with the defaults.
 2. A typo such as `max_stor_mb` gives a warning naming `max_store_mb`.
-3. `agentlog config show --origin` attributes a value set by an environment variable to that variable.
-4. A cloned repository whose `.agentlog.toml` sets an LLM endpoint and raises capture limits has both ignored, with warnings.
+3. `eagain config show --origin` attributes a value set by an environment variable to that variable.
+4. A cloned repository whose `.eagain.toml` sets an LLM endpoint and raises capture limits has both ignored, with warnings.
 5. With a low `max_store_mb`, `prune --dry-run` changes nothing, and `prune` then compacts the oldest text first while search still finds those items by title, files and commands.
 6. A pinned session survives pruning.
 7. Pruned traces do not return on the next `index`, but do with `--backfill`.
