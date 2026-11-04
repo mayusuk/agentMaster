@@ -25,7 +25,7 @@ Adds `src/eagain/semconv.py`, which holds the pinned OpenTelemetry convention ve
 
 ## Steps
 
-- [ ] `semconv.py` with pinned versions and every name, plus tests that every section 5 name has a constant, that extensions use the `eagain.` prefix, and that the module imports nothing from eagain.
+- [x] `semconv.py` with pinned versions and every name, plus tests that every section 5 name has a constant, that extensions use the `eagain.` prefix, and that the module imports nothing from eagain.
 - [ ] Outcome, verify, ship.
 
 ## Acceptance criteria
