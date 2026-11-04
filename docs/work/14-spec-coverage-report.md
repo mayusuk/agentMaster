@@ -3,7 +3,7 @@
 **Issue:** [#14](https://github.com/mayusuk/agentMaster/issues/14) (feature)
 **Branch:** `issue/14-spec-coverage-report`
 **Base:** `origin/main @ 7f79edb` (checked before branching)
-**Status:** Draft
+**Status:** Done
 
 ## Summary
 
@@ -29,7 +29,7 @@ Adds `scripts/spec_coverage.py`, a standard-library report of every acceptance c
 
 - [x] Parser and report, with tests on synthetic specs, a plan and tests (finished gap fails, unfinished gap passes) and on the real specs (every criterion listed).
 - [x] Wiring: pyproject, CI job, `.wf.toml` check; CLAUDE.md command list.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -46,4 +46,17 @@ Standard checks, plus `python scripts/spec_coverage.py` passes on the branch.
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:**
+  - `scripts/spec_coverage.py` is the report.
+  - `tests/test_spec_coverage.py` has 10 tests:
+    - synthetic repositories cover a finished gap (fails), an unfinished gap (passes), number-order parsing, prefix matching that doesn't cross `AC1`/`AC10`, ranges, unknown references and JSON;
+    - the real specs check that all 139 criteria are listed (Spec 001: 42 ACs and 6 NFRs, Spec 002: 56 and 5, Spec 003: 28 and 2), counted independently of the parser.
+  - Wiring: a CI job, a `.wf.toml` check, pyproject (`scripts` in mypy files and pytest `pythonpath`) and `CLAUDE.md`.
+- **On `main` today:** 8 of 139 criteria have tests and no milestone is finished, so the report passes.
+- **Decisions for review:**
+  - **Finished marker:** `**Status:** Finished` as the first non-empty line after a milestone heading in `specs/*/plan.md`.
+  - **NFRs:** each NFR is one criterion, `NFR-n`, covered by `test_nfrN_...`. NFRs belong to a milestone only if a plan heading lists them, so today they are all unplanned.
+  - **Unplanned requirements:** a requirement in no plan heading is reported as unplanned and never fails. Spec 002 and Spec 003's v0.2 work have no plan yet.
+  - **CI:** the job runs with `uv run --no-project`, since the report uses only the standard library.
+- **For #15:** the M1 heading includes FR-21 (redaction limits, built with M2 redaction). Marking M1 finished will report those criteria as gaps unless they are tested or the heading changes.
+- **Follow-ups:** none filed.
