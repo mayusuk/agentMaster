@@ -1,0 +1,78 @@
+# Issue workflow configuration (gh-wf: the plan-work and work-issue skills).
+# Everything repository-specific lives here. The script reads this file from the
+# worktree being checked, so a branch's own checks decide whether it passes.
+
+[repo]
+base_branch = "main"
+remote = "origin"
+
+[paths]
+worktrees = ".worktrees"     # gitignored; one worktree per issue or plan
+plans = "docs/plans"         # plan documents that become feature issues
+work_plans = "docs/work"     # one work plan per issue, committed with the change
+
+[labels]
+feature = "feature"          # issues created from a plan
+bug = "bug"
+plan = "plan"                # tracking issue for a plan
+pick_order = ["bug", "feature"]   # which ready issues `next` offers first
+
+[knowledge]
+# Files the agent must read before planning or working an issue.
+read = [
+    "CLAUDE.md",
+    "specs/001-agent-log-tracer/plan.md",
+    ".github/workflows/ci.yml",
+]
+# Guidance that is not written down anywhere else in the repository.
+notes = """
+- The specs in specs/ are approved and are the source of truth. Releases go in spec order (v0.1, v0.2, v0.3).
+- Read every spec requirement a task cites in full, including all of its ACn criteria. Requirement
+  numbers continue across specs, and FR-17 comes before FR-15 in Spec 002.
+- Cite FR/NFR/AC numbers in plans and issues. Do not copy spec prose.
+- Plan tasks map to specs/001-agent-log-tracer/plan.md section 4 (milestone Mx, task n). Put
+  "plan Mx.n" in each task's text.
+- Never commit, quote or print real transcript or corpus text (plan section 5).
+- A milestone's last task also needs the live tier: verify --also "live=uv run pytest -m live",
+  with only its aggregate summary recorded in the work plan's Outcome.
+"""
+
+# Checks run in order from the worktree root, without a shell. They gate the
+# base branch before a work branch is created, and the branch before it is pushed.
+# Mirror CI. `env` adds environment variables. `when_exists` reports the step as
+# NOT AVAILABLE (never a silent pass) while that path is missing.
+[[verify]]
+name = "install"
+run = "uv sync --locked"
+
+[[verify]]
+name = "lint"
+run = "uv run ruff check ."
+
+[[verify]]
+name = "format"
+run = "uv run ruff format --check ."
+
+[[verify]]
+name = "types"
+run = "uv run mypy"
+
+[[verify]]
+name = "unit"
+run = "uv run pytest"
+
+# The corpus tier (plan section 5) is required for every PR once M1 task 9 builds it.
+[[verify]]
+name = "corpus"
+run = "uv run pytest -m corpus"
+env = { EAGAIN_REQUIRE_CORPORA = "1" }
+when_exists = "tests/corpora/registry.toml"
+
+# Optional: work plans list criteria under "## Acceptance criteria". Each match of
+# ref_pattern must have a test whose name starts with test_prefix, formatted with
+# the pattern's groups and lowercased.
+# Plan section 5, definition of done: every criterion touched has a test named after it.
+[acceptance]
+ref_pattern = '\b(N?FR)-(\d+)\s+AC(\d+)\b'
+test_prefix = "test_{0}{1}_ac{2}_"
+test_glob = "tests/**/*.py"

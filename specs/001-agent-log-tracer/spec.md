@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review |
-| **Working name** | `agentlog` (availability on package registries not checked) |
+| **Status** | Approved |
+| **Name** | `eagain` (exact name free on PyPI and npm when checked; not yet reserved, no trademark search done) |
 | **Scope** | First release (v0.1) |
 | **Constraints** | Python 3.11+; OpenTelemetry as the trace format |
 
@@ -65,42 +65,43 @@ Both are still at Development stability, which has three consequences:
 
 - The tool pins one conventions version or commit and records it in every report.
 - Lines are not guaranteed to be ordered, so spans are assembled by `traceId` and `parentSpanId` rather than by file position.
-- Before implementation, the mapping below must be checked against the pinned version (M1). Attribute names marked † were not confirmed against the conventions when this spec was written.
+- The mapping below has been checked against the pinned versions: `semantic-conventions-genai` commit `9d1e748` (which has no tagged release yet), and `semantic-conventions` v1.45.0 for `vcs.*` and `error.type`. Moving to a newer version means re-checking it.
 
 ### Mapping
 
 | Concept | OpenTelemetry representation |
 |---|---|
 | Session | One trace, with a root span with `gen_ai.operation.name = invoke_agent` and `gen_ai.conversation.id` set to the session ID |
-| Agent identity | `gen_ai.agent.name`, `gen_ai.agent.id`, `gen_ai.agent.version` |
+| Agent identity | `gen_ai.provider.name` (required by the conventions), `gen_ai.agent.name`, `gen_ai.agent.id`, `gen_ai.agent.version` |
 | Subagent run | Child `invoke_agent` span. Its descendants belong to that subagent |
-| Model call | `chat` span with `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `output_tokens`, `cache_read.input_tokens` and cache write tokens† |
-| Repository | `vcs.repository.url.full`†, `vcs.ref.head.name`†, `vcs.ref.head.revision`† with any credentials removed |
-| Tool call | `execute_tool` span with `gen_ai.tool.name`, `gen_ai.tool.call.id`, `gen_ai.tool.call.arguments`†, `gen_ai.tool.call.result`† |
-| Failure | Span status `ERROR` plus `error.type` |
-| Message and reasoning content | Optional span events, following the conventions where they define a shape. Rules never require them |
+| Model call | `chat` span with `gen_ai.request.model` and `gen_ai.usage.input_tokens`, `output_tokens`, `cache_read.input_tokens`, `cache_write.input_tokens` |
+| Repository | `vcs.repository.url.full`, `vcs.ref.head.name`, `vcs.ref.head.revision` with any credentials removed. These are at release candidate stability |
+| Tool call | `execute_tool` span with `gen_ai.tool.name`, `gen_ai.tool.call.id`, and `gen_ai.tool.call.arguments` and `gen_ai.tool.call.result`, which are opt-in, so third-party traces may omit them |
+| Skill load | `execute_tool` span with `gen_ai.skill.name` |
+| Failure | Span status `ERROR` plus `error.type`, with an optional `gen_ai.client.operation.exception` event |
+| Compaction | `gen_ai.conversation.compacted = true` on later model calls, plus an `eagain.compaction` event from importers that can see the moment it happened |
+| Message and reasoning content | Optional `gen_ai.client.inference.operation.details` event with `gen_ai.input.messages` and `gen_ai.output.messages`. Reasoning uses the conventions' `reasoning` message part. Rules never require them |
 
 ### Extensions
 
-The conventions do not cover everything the rules need. Additions use the `agentlog.` prefix and are always optional, so third-party traces remain valid without them.
+The conventions do not cover everything the rules need. Additions use the `eagain.` prefix and are always optional, so third-party traces remain valid without them.
 
 | Name | Kind | Meaning |
 |---|---|---|
-| `agentlog.tool.outcome` | Span attribute | `ok`, `error`, `denied` or `unknown` |
-| `agentlog.interrupt` | Span event | The user stopped the agent mid-turn |
-| `agentlog.compaction` | Span event | The agent's context was summarised or truncated |
-| `agentlog.reasoning` | Span event | Agent reasoning text, only when the source recorded it |
-| `agentlog.source.*` | Span attribute | Pointer to the source record, for tracing evidence back |
-| `agentlog.project.id`, `agentlog.project.id_source` | Span attribute | Stable project identity, set per span because one session can span several directories (defined in Spec 002) |
-| `agentlog.cwd` | Span attribute | Working directory for the span |
-| `agentlog.turn.id` | Span attribute | Groups spans under the user request that caused them (used by Spec 002) |
-| `agentlog.skill` | Span attribute | Skill the agent was using, when recorded (used by Spec 002) |
+| `eagain.tool.outcome` | Span attribute | `ok`, `error`, `denied` or `unknown` |
+| `eagain.interrupt` | Span event | The user stopped the agent mid-turn |
+| `eagain.compaction` | Span event | The moment the agent's context was summarised or truncated. The conventions only mark calls that used a compacted context, so without this event each change from uncompacted to compacted counts as one compaction |
+| `eagain.source.*` | Span attribute | Pointer to the source record, for tracing evidence back |
+| `eagain.project.id`, `eagain.project.id_source` | Span attribute | Stable project identity, set per span because one session can span several directories (defined in Spec 002) |
+| `eagain.cwd` | Span attribute | Working directory for the span |
+| `eagain.turn.id` | Span attribute | Groups spans under the user request that caused them (used by Spec 002) |
+| `eagain.skill` | Span attribute | Skill active for this span, when recorded. `gen_ai.skill.name` only covers the call that loaded the skill (used by Spec 002) |
 
 ### Determining a tool's outcome
 
 Applied in order:
 
-1. Use `agentlog.tool.outcome` if present.
+1. Use `eagain.tool.outcome` if present.
 2. Status `ERROR` or an `error.type` attribute means `error`.
 3. Otherwise `ok`, because OpenTelemetry instrumentation normally leaves the status unset on success.
 
@@ -108,13 +109,13 @@ Importers set `unknown` explicitly when a call has no recorded result, for examp
 
 ### Error text for fingerprints
 
-Use the first available of: status message, the `exception.message` of an `exception` event, the tool result, `error.type`. Producers that omit content yield coarser fingerprints, and the report's coverage section says when this happened.
+Use the first available of: status message, the `exception.message` of an `exception` or `gen_ai.client.operation.exception` event, the tool result, `error.type`. Producers that omit content yield coarser fingerprints, and the report's coverage section says when this happened.
 
 ## 6. Functional requirements
 
 ### FR-1 Trace validation
 
-`agentlog validate <file>` checks a file against the OTLP JSON structure and the GenAI expectations above.
+`eagain validate <file>` checks a file against the OTLP JSON structure and the GenAI expectations above.
 
 - **AC1:** A valid file exits 0 and prints trace, span and `execute_tool` counts.
 - **AC2:** Malformed OTLP exits 2 and reports the line number and reason for each error.
@@ -125,7 +126,7 @@ Use the first available of: status message, the `exception.message` of an `excep
 
 Any producer writing OTLP JSON traces with GenAI conventions can be analysed with no code changes to the tool.
 
-- **AC1:** A fixture for a fictional agent, using no `agentlog.*` extensions, yields `tool-failure`, `repeated-error` and `recurring-failure` findings.
+- **AC1:** A fixture for a fictional agent, using no `eagain.*` extensions, yields `tool-failure`, `repeated-error` and `recurring-failure` findings.
 - **AC2:** A fixture captured once from real OpenTelemetry tooling (the Collector's file exporter), then committed, loads with no errors. This proves we read real OTLP, not only our own output.
 - **AC3:** Non-GenAI spans are ignored and counted in coverage.
 
@@ -133,7 +134,7 @@ Any producer writing OTLP JSON traces with GenAI conventions can be analysed wit
 
 Claude Code already records its sessions under `~/.claude/projects` as JSONL. The importer reads those files in place and translates them to the mapping in section 5. It adds no logging, and needs no Claude Code configuration, so existing history can be analysed immediately.
 
-Commands: `agentlog import claude-code [path] -o <out.jsonl>`, or directly `agentlog analyze --from claude-code [path]`. The path defaults to `~/.claude/projects`. The importer interface is documented so others can be contributed.
+Commands: `eagain import claude-code [path] -o <out.jsonl>`, or directly `eagain analyze --from claude-code [path]`. The path defaults to `~/.claude/projects`. The importer interface is documented so others can be contributed.
 
 - **AC1:** Tool calls and results are paired into `execute_tool` spans, and error results map to `outcome: error`.
 - **AC2:** Records marked as sidechain become child `invoke_agent` spans and are not mistaken for the main agent.
@@ -143,7 +144,7 @@ Commands: `agentlog import claude-code [path] -o <out.jsonl>`, or directly `agen
 - **AC6:** A truncated final line is tolerated with a warning.
 - **AC7:** Trace and span IDs are derived from source identifiers, so re-importing the same files gives byte-identical output.
 - **AC8:** Source files are only ever read.
-- **AC9:** Thinking blocks with text become `agentlog.reasoning` events. Blocks with empty text, which are common, are counted only. Coverage reports both counts.
+- **AC9:** Thinking blocks with text become `reasoning` message parts. Blocks with empty text, which are common, are counted only. Coverage reports both counts.
 - **AC10:** User prompts, final responses, session titles, working directory per record and git branch are preserved, and spans carry the project, turn and skill attributes where available. Spec 002 depends on this, so the importer must not need rewriting for it.
 
 Claude Code's own OpenTelemetry export is a separate path and not the v0.1 source. Its detail is opt-in, tool output requires its beta tracing, it does not export thinking, and it does not cover sessions from before it was enabled.
@@ -160,10 +161,10 @@ Rules read the internal model and emit findings. The default rule set is:
 | `unresolved-failure` | The last call to a tool in a session failed and no later call to that tool succeeded | behaviour | high |
 | `recurring-failure` | Same error fingerprint in at least 2 sessions | systemic | high |
 | `permission-denied` | A tool's outcome is `denied` | permission | low |
-| `user-interrupt` | An `agentlog.interrupt` event occurs | behaviour | medium |
+| `user-interrupt` | An `eagain.interrupt` event occurs | behaviour | medium |
 | `subagent-failure` | A child `invoke_agent` span has status `ERROR` | behaviour | medium |
 | `runtime-error` | A `chat` span has status `ERROR` (rate limit, API or context-limit errors) | environment | medium |
-| `context-pressure` | At least 2 `agentlog.compaction` events in a session | context | low |
+| `context-pressure` | At least 2 `eagain.compaction` events in a session | context | low |
 
 Thresholds and severities can be configured, and rules can be disabled. Rules that need an extension simply do not fire without it, and the report lists them as not evaluated. `retry-loop` is also listed as not evaluated when arguments are absent.
 
@@ -191,7 +192,7 @@ Each high-priority finding group gets a recommended action from a rule-based tem
 
 ### FR-7 Reports
 
-`agentlog analyze <paths...> [--since <date>] [--format md,html,json] [--out <dir>]` prints a terminal summary and writes reports.
+`eagain analyze <paths...> [--since <date>] [--format md,html,json] [--out <dir>]` prints a terminal summary and writes reports.
 
 Report order: headline metrics, top recommendations, recurring failures across sessions, per-session breakdown with evidence, then coverage (skipped records, ignored spans, rules not evaluated, suppressions, conventions version).
 
@@ -240,7 +241,7 @@ Given a synthetic set of 5 Claude Code sessions, in which:
 - 1 session is clean, and
 - 1 file has a truncated last line,
 
-when `agentlog analyze --from claude-code` runs with no network available, then:
+when `eagain analyze --from claude-code` runs with no network available, then:
 
 1. It exits 0, and all formats are written.
 2. One `recurring-failure` group covers the 3 sessions and ranks first, with a recommendation.
@@ -274,5 +275,5 @@ when `agentlog analyze --from claude-code` runs with no network available, then:
 
 ## 11. Open questions
 
-1. **Project name and license.** Check `agentlog` for collisions; choose a license before public release.
+1. **Name reservation.** Reserve `eagain` on PyPI and do a trademark search before public release. The license is Apache-2.0.
 2. **Second importer.** Codex and Gemini CLI are the obvious candidates after v0.1. Claude Code's native OpenTelemetry output could also be supported once its tracing leaves beta.

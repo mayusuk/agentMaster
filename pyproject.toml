@@ -1,0 +1,71 @@
+[project]
+name = "eagain"
+dynamic = ["version"]
+description = "Find what your coding agents keep getting wrong, and what to change so they stop."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Mayur Khandave" }]
+keywords = ["agents", "claude-code", "opentelemetry", "observability", "llm"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+# The core has no runtime dependencies (plan section 1).
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/mayusuk/agentMaster"
+
+[project.scripts]
+eagain = "eagain.cli:main"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.100",
+    "jsonschema>=4.22",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/eagain/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eagain"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "-m", "not live"]
+markers = [
+    "corpus: runs against pinned public Hugging Face datasets (plan section 5)",
+    "live: runs against the developer's own local logs; never in CI (plan section 5)",
+    "network: allowed to open sockets; only for explicit LLM provider tests",
+]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PT"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]

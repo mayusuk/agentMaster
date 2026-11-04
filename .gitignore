@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Real data must never be committed (plan section 5)
+.corpora/
+*.transcript.jsonl
+
+# eagain output
+eagain-report/
+.eagain/
+
+# OS
+.DS_Store
+
+# gh-wf worktrees
+.worktrees/
