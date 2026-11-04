@@ -62,6 +62,12 @@ name = "unit"
 run = "uv run pytest"
 
 # The corpus tier (plan section 5) is required for every PR once M1 task 9 builds it.
+# Download step only, before tests start (plan section 5). Shares the primary checkout's cache.
+[[verify]]
+name = "corpus-fetch"
+run = "uv run python tests/corpora/corpus_fetch.py fetch"
+when_exists = "tests/corpora/registry.toml"
+
 [[verify]]
 name = "corpus"
 run = "uv run pytest -m corpus"
