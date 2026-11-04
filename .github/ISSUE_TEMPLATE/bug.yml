@@ -1,0 +1,27 @@
+name: Bug
+description: Something isn't working. A maintainer adds status:ready when it can be picked up.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Observed behaviour, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest input or command sequence that shows it.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: textarea
+    id: deps
+    attributes:
+      label: Dependencies
+      description: One "Blocked by #n" line per issue that must close first.
