@@ -3,7 +3,7 @@
 **Issue:** [#4](https://github.com/mayusuk/agentMaster/issues/4) (feature)
 **Branch:** `issue/4-project-config-limits`
 **Base:** `origin/main @ 7f79edb` (checked before branching)
-**Status:** Draft
+**Status:** Done
 
 ## Summary
 
@@ -40,7 +40,7 @@ Enforces Spec 003 FR-20 on a repository's untrusted `.eagain.toml`. It may set r
 
 - [x] Definition: rule, suppression and tool-name settings; tightening directions; tests.
 - [x] Loader: tightening, literal redaction patterns, denied namespaces; FR-20 AC1 to AC4 tests.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -61,4 +61,19 @@ Standard checks only.
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:**
+  - `definition.py` gains a tightening direction for each tighten setting.
+  - It adds 39 settings: `enabled` and `severity` for the ten FR-4 rules, their four thresholds, four suppression lists, and `tool_names.*`. That makes 88 settings in all.
+  - `retention.on_limit` is now `deny`.
+  - In `loader.py`, project values are checked during the merge, against the value already in effect.
+- **Tests:** 73 in total, including 30 new ones. The criteria tests are `test_fr20_ac1_*` to `test_fr20_ac4_*`, in `tests/test_config_project_limits.py`.
+- **Deviations:**
+  - The denied-namespace check runs before type checking. A malformed value under a denied key is therefore only warned about, never fatal, so an untrusted file cannot stop a command.
+  - Project `redaction.disabled` is also denied, because it would weaken redaction. FR-21's per-pattern disable is a user setting.
+  - TOML has no null, so a repository cannot write `none` to remove a limit. Raising a limit is the only loosening possible, and it is rejected.
+- **Decisions for review:**
+  - The threshold key names `min_occurrences`, `min_sessions` and `min_compactions`.
+  - The shape of `tool_names."<source tool>" = "<name>"`.
+  - Denying `retention.on_limit`.
+  - `retention.keep_rollups = false` counts as tighter, because less data is kept.
+- **Follow-ups:** none filed. FR-20 AC5 (reports state that a project config was applied) belongs to M4.
