@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `eagain` (repo: `agentMaster`) is a planned open-source Python 3.11+ CLI that analyses coding-agent session logs. It reports failures, finds similar past work, and suggests automation.
 
-Implementation has started (v0.1, milestone M1). Only `eagain --version` works so far, and the other commands in the specs are not built yet.
+Implementation has started (v0.1, milestone M1). So far `eagain --version` and `eagain config show|validate|init` work, and the other commands in the specs are not built yet. `docs/settings.md` is generated from the settings definition by `uv run python scripts/gen_settings_docs.py`, and a unit test fails when it is out of date.
 
 ## Commands
 
