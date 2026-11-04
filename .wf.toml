@@ -87,3 +87,12 @@ when_exists = "tests/corpora/registry.toml"
 ref_pattern = '\b(N?FR)-(\d+)\s+AC(\d+)\b'
 test_prefix = "test_{0}{1}_ac{2}_"
 test_glob = "tests/**/*.py"
+
+# Read by the review-pr skill (pr-reviewer agent): the source of truth a PR is judged against,
+# in addition to [knowledge] read. Loaded from the base branch, so a PR cannot change its own review.
+[review]
+sources = [
+    "specs/*/spec.md",
+    "specs/*/plan.md",
+    "docs/plans/*.md",
+]
