@@ -63,7 +63,7 @@ Standard checks only.
 
 - **Done:**
   - `definition.py` gains a tightening direction for each tighten setting.
-  - It adds 39 settings: `enabled` and `severity` for the ten FR-4 rules, their four thresholds, four suppression lists, and `tool_names.*`. That makes 88 settings in all.
+  - It adds 29 settings: `enabled` and `severity` for the ten FR-4 rules, their four thresholds, four suppression lists, and `tool_names.*`. That makes 81 settings in all.
   - `retention.on_limit` is now `deny`.
   - In `loader.py`, project values are checked during the merge, against the value already in effect.
 - **Tests:** 73 in total, including 30 new ones. The criteria tests are `test_fr20_ac1_*` to `test_fr20_ac4_*`, in `tests/test_config_project_limits.py`.
