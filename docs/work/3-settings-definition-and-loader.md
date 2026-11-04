@@ -43,8 +43,8 @@ Each value keeps an `Origin` (layer plus file path, variable name or preset name
 ## Steps
 
 - [x] Settings definition: `Setting`, `SETTINGS`, `PRESETS`, key matching with wildcards; tests that every default validates, keys are unique and preset keys exist.
-- [ ] Loader core: file reading, flattening, version check and migrations, type validation, origins, unknown-key warnings; FR-19 AC4 and AC6 tests.
-- [ ] Layers: user, project (fail-closed), environment, `--config`, flags, presets; precedence test setting one key in every source; FR-19 AC1 test.
+- [x] Loader core: file reading, flattening, version check and migrations, type validation, origins, unknown-key warnings; FR-19 AC4 and AC6 tests.
+- [x] Layers: user, project (fail-closed), environment, `--config`, flags, presets; precedence test setting one key in every source; FR-19 AC1 test.
 - [ ] Outcome, verify, ship.
 
 ## Acceptance criteria

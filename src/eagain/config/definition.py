@@ -18,7 +18,6 @@ KeyPath = tuple[str, ...]
 """A setting key split into segments. Tuples keep quoted TOML keys containing dots intact."""
 
 WILDCARD = "*"
-CURRENT_VERSION = 1
 
 
 class Kind(StrEnum):
