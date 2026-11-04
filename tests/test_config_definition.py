@@ -4,10 +4,12 @@ import pytest
 
 from eagain.config.definition import (
     PRESETS,
+    RULES,
     SETTINGS,
     Kind,
     ProjectAccess,
     Setting,
+    Tighter,
     format_key,
     lookup,
     parse_key,
@@ -98,3 +100,46 @@ def test_format_key_quotes_unusual_segments() -> None:
         'capture.tools."mcp.server.tool".diff_kb'
     )
     assert format_key(parse_key("retention.max_store_mb")) == "retention.max_store_mb"
+
+
+def test_every_tightened_setting_says_which_way_is_stricter() -> None:
+    for s in SETTINGS:
+        if s.project is ProjectAccess.TIGHTEN:
+            assert s.tighter is not None, s.name
+            if s.kind in (Kind.INT, Kind.FLOAT):
+                assert s.tighter is Tighter.LOWER, s.name
+            elif s.kind is Kind.BOOL:
+                assert s.tighter in (Tighter.TRUE, Tighter.FALSE), s.name
+            else:
+                assert s.tighter is Tighter.SUPERSET, s.name
+        else:
+            assert s.tighter is None, s.name
+
+
+def test_capture_and_retention_are_only_tightened_or_denied() -> None:
+    for s in SETTINGS:
+        if s.key[0] in ("capture", "retention"):
+            assert s.project in (ProjectAccess.TIGHTEN, ProjectAccess.DENY), s.name
+    on_limit = lookup(parse_key("retention.on_limit"))
+    assert on_limit is not None
+    assert on_limit.project is ProjectAccess.DENY
+
+
+def test_spec_001_rule_defaults() -> None:
+    assert len(RULES) == 10
+
+    def default(name: str) -> object:
+        s = lookup(parse_key(name))
+        assert s is not None, name
+        assert s.project is ProjectAccess.ALLOW, name
+        return s.default
+
+    assert default("rules.tool-failure.severity") == "low"
+    assert default("rules.retry-loop.severity") == "high"
+    assert default("rules.context-pressure.enabled") is True
+    assert default("rules.repeated-error.min_occurrences") == 3
+    assert default("rules.retry-loop.min_attempts") == 3
+    assert default("rules.recurring-failure.min_sessions") == 2
+    assert default("rules.context-pressure.min_compactions") == 2
+    assert default("suppressions.fingerprints") == []
+    assert lookup(("tool_names", "Bash")) is not None

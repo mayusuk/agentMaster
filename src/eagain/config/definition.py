@@ -49,6 +49,17 @@ class ProjectAccess(StrEnum):
     DENY = "deny"
 
 
+class Tighter(StrEnum):
+    """Which direction is stricter, for settings project config may only tighten (FR-20 AC2)."""
+
+    LOWER = "lower"
+    """A smaller number. ``None`` means unlimited, so any number is tighter than ``None``."""
+    FALSE = "false"
+    TRUE = "true"
+    SUPERSET = "superset"
+    """Project entries are added to the inherited list, never replace it."""
+
+
 @dataclass(frozen=True)
 class Setting:
     key: KeyPath
@@ -62,6 +73,7 @@ class Setting:
     choices: tuple[str, ...] = ()
     minimum: float | None = None
     secret: bool = False
+    tighter: Tighter | None = None
 
     @property
     def name(self) -> str:
@@ -115,6 +127,12 @@ def parse_key(name: str) -> KeyPath:
 
 
 def _s(name: str, kind: Kind, default: Any, description: str, **kw: Any) -> Setting:
+    if (
+        kw.get("project") is ProjectAccess.TIGHTEN
+        and "tighter" not in kw
+        and kind in (Kind.INT, Kind.FLOAT)
+    ):
+        kw["tighter"] = Tighter.LOWER
     return Setting(parse_key(name), kind, default, description, **kw)
 
 
@@ -194,7 +212,8 @@ def _build() -> tuple[Setting, ...]:
             "compact",
             "What to do when a limit is reached",
             choices=("compact", "delete_oldest", "warn", "stop_indexing"),
-            **_TIGHT_PRUNE,
+            # No agreed strictness order between the four actions, so a repository cannot set it.
+            applies=Applies.NEXT_PRUNE,
         ),
         _s(
             "retention.warn_at_percent",
@@ -209,6 +228,7 @@ def _build() -> tuple[Setting, ...]:
             Kind.BOOL,
             True,
             "Keep daily failure and token counts after traces are deleted",
+            tighter=Tighter.FALSE,
             **_TIGHT_PRUNE,
         ),
         _s(
@@ -217,14 +237,29 @@ def _build() -> tuple[Setting, ...]:
             True,
             "Prune after each index",
             project=ProjectAccess.TIGHTEN,
+            tighter=Tighter.TRUE,
         ),
     ]
     # Capture (Spec 003 section 3). v0.2 behaviour, defined now for presets and FR-20.
     for key, default, desc in _CAPTURE_KB:
         out.append(_s(f"capture.{key}", Kind.FLOAT, default, desc, minimum=0, **_TIGHT_DATA))
     out += [
-        _s("capture.reasoning", Kind.BOOL, True, "Keep reasoning text at all", **_TIGHT_DATA),
-        _s("capture.diffs", Kind.BOOL, True, "Keep diff excerpts at all", **_TIGHT_DATA),
+        _s(
+            "capture.reasoning",
+            Kind.BOOL,
+            True,
+            "Keep reasoning text at all",
+            tighter=Tighter.FALSE,
+            **_TIGHT_DATA,
+        ),
+        _s(
+            "capture.diffs",
+            Kind.BOOL,
+            True,
+            "Keep diff excerpts at all",
+            tighter=Tighter.FALSE,
+            **_TIGHT_DATA,
+        ),
         _s(
             "capture.max_trace_mb",
             Kind.FLOAT,
@@ -246,6 +281,7 @@ def _build() -> tuple[Setting, ...]:
             Kind.STR_LIST,
             [],
             "Tools whose calls keep no content",
+            tighter=Tighter.SUPERSET,
             **_TIGHT_DATA,
         ),
         _s(
@@ -253,6 +289,7 @@ def _build() -> tuple[Setting, ...]:
             Kind.STR_LIST,
             [],
             "Globs; matching spans keep no path or content",
+            tighter=Tighter.SUPERSET,
             **_TIGHT_DATA,
         ),
     ]
@@ -321,6 +358,30 @@ def _build() -> tuple[Setting, ...]:
             optional=True,
         ),
         _s("llm.confirm", Kind.BOOL, True, "Ask before sending anything (FR-8 AC2)"),
+        # Suppressions (Spec 001 FR-4 AC6; Spec 003 adds tool). Project-settable (FR-20 AC1).
+        *(
+            _s(
+                f"suppressions.{what}",
+                Kind.STR_LIST,
+                [],
+                f"Suppress findings by {label}",
+                project=ProjectAccess.ALLOW,
+            )
+            for what, label in (
+                ("rules", "rule ID"),
+                ("fingerprints", "error fingerprint"),
+                ("projects", "project ID"),
+                ("tools", "tool name"),
+            )
+        ),
+        _s(
+            "tool_names.*",
+            Kind.STR,
+            None,
+            "Name rules should use for this source tool name",
+            optional=True,
+            project=ProjectAccess.ALLOW,
+        ),
         # Operation.
         _s(
             "operation.log_level",
@@ -330,7 +391,66 @@ def _build() -> tuple[Setting, ...]:
             choices=("debug", "info", "warning", "error"),
         ),
     ]
+    out += _rule_settings()
     return tuple(out)
+
+
+# Spec 001 FR-4: rule ID -> (default severity, thresholds as (key, default, description)).
+RULES: dict[str, tuple[str, tuple[tuple[str, int, str], ...]]] = {
+    "tool-failure": ("low", ()),
+    "repeated-error": (
+        "medium",
+        (("min_occurrences", 3, "Times one error fingerprint repeats in a session"),),
+    ),
+    "retry-loop": (
+        "high",
+        (("min_attempts", 3, "Calls with the same tool and normalised arguments in a session"),),
+    ),
+    "unresolved-failure": ("high", ()),
+    "recurring-failure": (
+        "high",
+        (("min_sessions", 2, "Sessions sharing one error fingerprint"),),
+    ),
+    "permission-denied": ("low", ()),
+    "user-interrupt": ("medium", ()),
+    "subagent-failure": ("medium", ()),
+    "runtime-error": ("medium", ()),
+    "context-pressure": (
+        "low",
+        (("min_compactions", 2, "Compaction events in a session"),),
+    ),
+}
+SEVERITIES = ("low", "medium", "high")
+
+
+def _rule_settings() -> list[Setting]:
+    out: list[Setting] = []
+    for rule, (severity, thresholds) in RULES.items():
+        out.append(
+            _s(f"rules.{rule}.enabled", Kind.BOOL, True, f"Run {rule}", project=ProjectAccess.ALLOW)
+        )
+        out.append(
+            _s(
+                f"rules.{rule}.severity",
+                Kind.ENUM,
+                severity,
+                f"Severity of {rule} findings",
+                choices=SEVERITIES,
+                project=ProjectAccess.ALLOW,
+            )
+        )
+        for key, default, desc in thresholds:
+            out.append(
+                _s(
+                    f"rules.{rule}.{key}",
+                    Kind.INT,
+                    default,
+                    desc,
+                    minimum=1,
+                    project=ProjectAccess.ALLOW,
+                )
+            )
+    return out
 
 
 SETTINGS: tuple[Setting, ...] = _build()
