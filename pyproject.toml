@@ -47,6 +47,7 @@ packages = ["src/eagain"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["scripts"]
 # The default run is the unit tier. `-m corpus` and `-m live` select the other tiers.
 addopts = ["-ra", "--strict-markers", "-m", "not live and not corpus"]
 markers = [
@@ -58,7 +59,8 @@ markers = [
 [tool.mypy]
 strict = true
 python_version = "3.11"
-files = ["src", "tests"]
+files = ["src", "tests", "scripts"]
+mypy_path = "scripts"
 
 [tool.ruff]
 line-length = 100
