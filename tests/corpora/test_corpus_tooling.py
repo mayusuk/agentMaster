@@ -16,6 +16,7 @@ from corpus_fetch import (
     measure,
     primary_checkout,
     render_registry,
+    safe_relative,
     verify,
 )
 from corpus_gate import ensure_available, required
@@ -164,3 +165,12 @@ def test_cache_dir_is_shared_with_the_primary_checkout(tmp_path: Path) -> None:
     assert primary_checkout(wt) == main.resolve()
     assert primary_checkout(main) == main
     assert cache_dir({"EAGAIN_CORPORA_DIR": str(tmp_path / "c")}) == tmp_path / "c"
+
+
+@pytest.mark.parametrize(
+    "bad", ["/etc/passwd", "../x.jsonl", "a/../../x", "a\\b.jsonl", "", "a//b"]
+)
+def test_registry_paths_cannot_escape_the_cache(bad: str) -> None:
+    with pytest.raises(CorpusError, match="unsafe path"):
+        safe_relative(bad)
+    assert safe_relative("sub/dir/x.jsonl") == "sub/dir/x.jsonl"

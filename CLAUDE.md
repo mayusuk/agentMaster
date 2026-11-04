@@ -16,11 +16,13 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy                              # strict, covers src and tests
 uv run pytest                            # unit tests; live tests are excluded by default
 uv run pytest tests/test_cli.py::test_version_flag   # one test
+uv run python tests/corpora/corpus_fetch.py fetch   # download and verify the pinned corpora (~190 MB, into .corpora/)
+EAGAIN_REQUIRE_CORPORA=1 uv run pytest -m corpus     # corpus tier; without the variable, missing data skips
 uv run pytest -m live                    # live tier on your own ~/.claude/projects
 uv build
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, types and unit tests on Python 3.11 and 3.14. Tests cannot open network connections unless they are marked `network`.
+CI (`.github/workflows/ci.yml`) runs lint, types and unit tests on Python 3.11 and 3.14, and a `corpus` job that downloads the corpora (cached) and runs the corpus tier. Tests cannot open network connections unless they are marked `network`.
 
 ## Spec-driven development
 

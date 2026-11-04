@@ -140,7 +140,7 @@ Unit tests check behaviour precisely. Corpus tests show that the tool holds up o
 | [`armand0e/claude-fable-5-claude-code`](https://huggingface.co/datasets/armand0e/claude-fable-5-claude-code) | `7388ef9` | MIT | 63 files, 75 MB, 55 sessions, 8 subagent files | 2.1.170 to 2.1.176 | Primary: oracle checks, snapshots, performance |
 | [`AlinCiocan/fable-5-claude-code-traces`](https://huggingface.co/datasets/AlinCiocan/fable-5-claude-code-traces) | `e33ebbc` | CC BY 4.0 (credit in docs) | 18 files, 50 MB | 2.1.173 | Second source from a different user |
 | [`crispwisp/wisp-claude-code-sessions`](https://huggingface.co/datasets/crispwisp/wisp-claude-code-sessions) | `c2c90b5` | MIT | 104 small files, 25 MB, nested in per-project folders | 2.1.168 | Directory layout like `~/.claude/projects`, and a different model |
-| [`choucsan/mimo-claude-code-traces-1k`](https://huggingface.co/datasets/choucsan/mimo-claude-code-traces-1k) | `39cc3fc` | MIT | 984 files, 41 MB | Version field overwritten by the publisher | Robustness only: altered fields, a non-Claude model, many files |
+| [`choucsan/mimo-claude-code-traces-1k`](https://huggingface.co/datasets/choucsan/mimo-claude-code-traces-1k) | `39cc3fc` | MIT | 1,017 files, 41 MB | Version field overwritten by the publisher | Robustness only: altered fields, a non-Claude model, many files |
 
 Only datasets with an explicit license are used. Others found in the search, such as `nlile/misc-merged-claude-code-traces-v1`, have none and are excluded. The registry lives in `tests/corpora/registry.toml`: dataset, revision, license, and a SHA-256 for every file. A hash mismatch fails the run.
 

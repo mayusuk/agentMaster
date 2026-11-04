@@ -21,7 +21,7 @@ Adds the corpus test tier from plan section 5:
   - armand0e: 63 `.jsonl` files, 75.1 MB;
   - AlinCiocan: 18 files, 49.9 MB;
   - crispwisp: 104 files, 25.3 MB;
-  - choucsan: 984 files, 40.1 MB.
+  - choucsan: 1,017 files, 40.5 MB (plan section 5 said 984, which was only the first page of the tree API; corrected here).
   - This matches plan section 5. Most files are plain git blobs rather than LFS objects, so the SHA-256 hashes must come from the downloads themselves.
 - **Rules:**
   - never commit, quote or print corpus content;
@@ -45,7 +45,7 @@ Adds the corpus test tier from plan section 5:
 ## Steps
 
 - [x] Fetcher, pin, gate and count helpers, with unit tests on synthetic files served from `file://` URLs (hash mismatch, require flag, count messages).
-- [ ] Pin the four corpora from real downloads; add the first corpus test, the test selection change, and the `.wf.toml` fetch step.
+- [x] Pin the four corpora from real downloads; add the first corpus test, the test selection change, and the `.wf.toml` fetch step.
 - [ ] CI `corpus` job with caching.
 - [ ] Outcome, verify, ship.
 

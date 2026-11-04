@@ -47,7 +47,8 @@ packages = ["src/eagain"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["-ra", "--strict-markers", "-m", "not live"]
+# The default run is the unit tier. `-m corpus` and `-m live` select the other tiers.
+addopts = ["-ra", "--strict-markers", "-m", "not live and not corpus"]
 markers = [
     "corpus: runs against pinned public Hugging Face datasets (plan section 5)",
     "live: runs against the developer's own local logs; never in CI (plan section 5)",

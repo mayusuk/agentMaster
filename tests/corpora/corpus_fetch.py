@@ -64,11 +64,22 @@ class Corpus:
         return f"{base_url}/datasets/{self.dataset}/resolve/{self.revision}/{quoted}"
 
 
+def safe_relative(path: str) -> str:
+    """Registry paths must stay inside the cache: relative, no ``..``, no backslashes."""
+    parts = path.split("/")
+    if not path or path.startswith("/") or "\\" in path or any(p in ("", ".", "..") for p in parts):
+        raise CorpusError(f"unsafe path in registry: {path!r}")
+    return path
+
+
 def load_registry(path: Path = REGISTRY) -> list[Corpus]:
     data = tomllib.loads(path.read_text(encoding="utf-8"))
     corpora = []
     for c in data.get("corpus", []):
-        files = tuple(CorpusFile(f["path"], f["sha256"], f["size"], f["lines"]) for f in c["files"])
+        files = tuple(
+            CorpusFile(safe_relative(f["path"]), f["sha256"], f["size"], f["lines"])
+            for f in c["files"]
+        )
         corpora.append(Corpus(c["id"], c["dataset"], c["revision"], c["license"], c["role"], files))
     return corpora
 
