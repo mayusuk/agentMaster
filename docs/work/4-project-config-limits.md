@@ -38,7 +38,7 @@ Enforces Spec 003 FR-20 on a repository's untrusted `.eagain.toml`. It may set r
 
 ## Steps
 
-- [ ] Definition: rule, suppression and tool-name settings; tightening directions; tests.
+- [x] Definition: rule, suppression and tool-name settings; tightening directions; tests.
 - [ ] Loader: tightening, literal redaction patterns, denied namespaces; FR-20 AC1 to AC4 tests.
 - [ ] Outcome, verify, ship.
 
