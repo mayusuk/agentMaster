@@ -44,7 +44,7 @@ Adds the corpus test tier from plan section 5:
 
 ## Steps
 
-- [ ] Fetcher, pin, gate and count helpers, with unit tests on synthetic files served from `file://` URLs (hash mismatch, require flag, count messages).
+- [x] Fetcher, pin, gate and count helpers, with unit tests on synthetic files served from `file://` URLs (hash mismatch, require flag, count messages).
 - [ ] Pin the four corpora from real downloads; add the first corpus test, the test selection change, and the `.wf.toml` fetch step.
 - [ ] CI `corpus` job with caching.
 - [ ] Outcome, verify, ship.
