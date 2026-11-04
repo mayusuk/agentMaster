@@ -4,15 +4,17 @@ Later sources win: defaults, preset, user config, project config, environment
 variables, then command-line flags (``--config <file>`` first, explicit flags last).
 Every value keeps its origin, so ``config show --origin`` can say where it came from.
 
-A repository's ``.eagain.toml`` is untrusted (FR-20). Until its limits are
-implemented in full, project config may set only settings marked ``allow``;
-anything else is ignored with a warning.
+A repository's ``.eagain.toml`` is untrusted (Spec 003 FR-20). It may set
+settings marked ``allow``; it may only tighten capture and retention, compared
+with the value already in effect; its redaction patterns are added as literal
+strings; and everything else is ignored with a warning.
 """
 
 from __future__ import annotations
 
 import difflib
 import os
+import re
 import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -28,6 +30,7 @@ from eagain.config.definition import (
     Kind,
     ProjectAccess,
     Setting,
+    Tighter,
     concrete_settings,
     format_key,
     lookup,
@@ -44,6 +47,14 @@ PROJECT_FILE = ".eagain.toml"
 ENV_PREFIX = "EAGAIN_"
 RESERVED_ENV = frozenset({"EAGAIN_HOME", "EAGAIN_REQUIRE_CORPORA"})
 """``EAGAIN_*`` variables that are not settings."""
+
+PROJECT_DENIED_NAMESPACES = frozenset(
+    {"llm", "paths", "sources", "projects", "sharing", "groups", "preset"}
+)
+"""Top-level sections a repository may never set, including keys later releases add
+(Spec 002's ``projects.<id>.sharing`` and ``.group``, ``paths.drafts``): FR-20 AC4."""
+
+_SKIP = object()
 
 
 class Layer(StrEnum):
@@ -177,6 +188,10 @@ def load(
 
     for src in accepted:
         for key, value in src.values.items():
+            if src.layer is Layer.PROJECT:
+                value = _project_value(key, value, values, src.name, out)
+                if value is _SKIP:
+                    continue
             values[key] = value
             origins[key] = Origin(src.layer, src.name)
 
@@ -316,14 +331,17 @@ def _accept(src: _Source, out: _Collector) -> _Source:
     for key, value in src.values.items():
         name = format_key(key)
         setting = lookup(key)
+        if src.layer is Layer.PROJECT and (
+            key[0] in PROJECT_DENIED_NAMESPACES
+            or (setting is not None and setting.project is ProjectAccess.DENY)
+        ):
+            out.warn(where, name, "cannot be set by project config (Spec 003 FR-20 AC4), ignored")
+            continue
         if setting is None:
             hint = _suggest(key)
             out.warn(
                 where, name, f"unknown setting, ignored{f'; did you mean {hint}?' if hint else ''}"
             )
-            continue
-        if src.layer is Layer.PROJECT and setting.project is not ProjectAccess.ALLOW:
-            out.warn(where, name, "cannot be set by project config (Spec 003 FR-20), ignored")
             continue
         problem = setting.check(value)
         if problem is not None:
@@ -331,6 +349,62 @@ def _accept(src: _Source, out: _Collector) -> _Source:
             continue
         kept[key] = value
     return _Source(src.layer, src.name, kept)
+
+
+def _project_value(
+    key: KeyPath, value: Any, values: Mapping[KeyPath, Any], where: str, out: _Collector
+) -> Any:
+    """The value a project setting may contribute, or ``_SKIP`` if it would weaken anything."""
+    setting = lookup(key)
+    if setting is None:  # _accept already dropped unknown keys
+        return _SKIP
+    if setting.project is ProjectAccess.ALLOW:
+        return value
+    inherited = _inherited(key, values)
+    if setting.project is ProjectAccess.LITERAL:
+        # FR-20 AC3: a crafted regular expression could stall redaction, so match literally.
+        return _union(inherited, [re.escape(v) for v in value])
+    if setting.tighter is Tighter.SUPERSET:
+        return _union(inherited, value)
+    if _is_tighter(setting.tighter, value, inherited):
+        return value
+    out.warn(
+        where,
+        format_key(key),
+        f"would loosen {_show(inherited)} to {_show(value)}; project config can only tighten "
+        "capture and retention (Spec 003 FR-20 AC2), ignored",
+    )
+    return _SKIP
+
+
+def _inherited(key: KeyPath, values: Mapping[KeyPath, Any]) -> Any:
+    """The value in effect before project config. Per-tool and per-source capture
+    overrides fall back to the base limit they override."""
+    current = values.get(key)
+    if current is None and len(key) == 4 and key[0] == "capture" and key[1] in ("tools", "sources"):
+        return values.get(("capture", key[3]))
+    return current
+
+
+def _is_tighter(direction: Tighter | None, value: Any, inherited: Any) -> bool:
+    if direction is Tighter.LOWER:
+        if value is None:
+            return inherited is None
+        return inherited is None or value <= inherited
+    if direction is Tighter.FALSE:
+        return value is False or value == inherited
+    if direction is Tighter.TRUE:
+        return value is True or value == inherited
+    return False
+
+
+def _union(inherited: Any, extra: list[str]) -> list[str]:
+    base = list(inherited or [])
+    return base + [v for v in extra if v not in base]
+
+
+def _show(value: Any) -> str:
+    return "none" if value is None else repr(value)
 
 
 def _suggest(key: KeyPath) -> str | None:
