@@ -29,14 +29,14 @@ Adds `eagain config show [--origin]`, `eagain config validate` and `eagain confi
 
 **`src/eagain/config/definition.py`**: mark `redaction.patterns` and `redaction.allowlist` as `secret` (D2).
 
-**`src/eagain/cli.py`**: a `config` command group with `show`, `validate` and `init`. A shared parent parser gives every config subcommand `--config` and `--no-project-config` (D7). `ConfigError` maps to exit 2, with each error on stderr. Warnings go to stderr on every command. A failed write in `init` exits 1.
+**`src/eagain/cli.py`**: a `config` command group with `show`, `validate` and `init`. A shared parent parser gives `show` and `validate` the `--config` and `--no-project-config` options (D7). `ConfigError` maps to exit 2, with each error on stderr. Warnings go to stderr on every command. A failed write in `init` exits 1.
 
 **`scripts/gen_settings_docs.py`** writes `docs/settings.md` from `settings_markdown()`. `--check` exits 1 when the file is stale. A unit test fails when the committed doc differs, and its message names the command to run.
 
 ## Steps
 
 - [x] Render module: TOML values, secret masking, `show` lines, `init` text, with unit tests (FR-19 AC2, AC5).
-- [ ] CLI `config show`, `config validate` and `config init`, with end-to-end tests through `main()` (FR-19 AC2, AC3, AC5).
+- [x] CLI `config show`, `config validate` and `config init`, with end-to-end tests through `main()` (FR-19 AC2, AC3, AC5).
 - [ ] Settings reference: `settings_markdown()`, the generator script, the committed `docs/settings.md`, and the up-to-date test (FR-19 AC9).
 - [ ] Update the project status line in `CLAUDE.md`, and fill in the Outcome.
 
@@ -52,10 +52,10 @@ Adds `eagain config show [--origin]`, `eagain config validate` and `eagain confi
 - **D1** [gap] FR-19 AC2: `config show` prints one `key = value` line per active value, in definition order, using TOML literals and `none` for unset values. With `--origin`, it appends `# <layer> (<file, variable or preset>)`. Why: the spec names the command and its flag but not the output format. This form reads as config and can be copied into a file.
 - **D2** [ambiguity] FR-19 AC2: "secret-like values" is read as: settings marked secret in the definition, now `redaction.patterns` and `redaction.allowlist`, shown as `<hidden: n values>`; and credentials in URL userinfo in any string value, shown as `***`. It is not read as pattern-based secret detection on every value. Why: those two settings hold exactly the strings a user wants kept out of output, and a key pasted into a URL is the likeliest leak. General detection needs the redaction patterns, which arrive in M2.
 - **D3** [open] FR-21 AC1, FR-9: once `redact.py` exists (plan M2.1), `config show` should also run displayed values through the built-in redaction patterns. It should flag disabled patterns (FR-21 AC1) too. Neither is built here.
-- **D4** [gap] FR-19 AC3: `config validate` prints warnings (unknown keys, ignored project values) but they do not fail it. It exits 0 if there are no errors. Errors exit 2, one per line on stderr as `error: <file>: <key>: <reason>`. `show` and `init` exit 2 the same way when config is invalid. Why: AC3 covers types and ranges, and AC4 makes unknown keys warnings.
+- **D4** [gap] FR-19 AC3: `config validate` prints warnings (unknown keys, ignored project values) but they do not fail it. It exits 0 if there are no errors. Errors exit 2, one per line on stderr as `error: <file>: <key>: <reason>`. `show` exits 2 the same way when config is invalid. `init` does not load settings. Why: AC3 covers types and ranges, and AC4 makes unknown keys warnings.
 - **D5** [gap] FR-19 AC5: `config init` writes to the user config path (`$EAGAIN_HOME/config.toml`, else `~/.config/eagain/config.toml`). `--path` chooses another file, and `-` prints to stdout. Without `--force` it refuses to overwrite an existing file, and exits 1. Only `version = 1` is active. Every setting is a commented-out `key = default` line, so later changes to the defaults still reach the user. Wildcard keys use placeholders: `"<tool>"`, `"<source>"`, `"<agent>"` and `"<source tool>"`. Why: the spec says only "a commented file listing every setting and its default".
 - **D6** [gap] FR-19 AC9, plan M6.2: the generated reference lives at `docs/settings.md`, written by `scripts/gen_settings_docs.py`, with a unit test that fails when it is stale. Plan M6.2 lists generated settings docs under the release milestone, but this issue builds them in M1. Why: the specs do not say where the generated docs live.
-- **D7** [gap] Spec 003 section 2: `--config` and `--no-project-config` are options on each `config` subcommand, through a shared parent parser that later commands will reuse. They are not top-level options. Why: only the config commands load settings so far, and the spec does not say where the flags sit in the command line.
+- **D7** [gap] Spec 003 section 2: `--config` and `--no-project-config` are options on the commands that load settings (`config show` and `config validate` so far), through a shared parent parser that later commands will reuse. They are not top-level options, and `config init` does not take them. Why: the spec does not say where the flags sit in the command line, and `init` writes a file without reading any config.
 
 ## Verification
 
