@@ -28,7 +28,7 @@ Adds `scripts/spec_coverage.py`, a standard-library report of every acceptance c
 ## Steps
 
 - [x] Parser and report, with tests on synthetic specs, a plan and tests (finished gap fails, unfinished gap passes) and on the real specs (every criterion listed).
-- [ ] Wiring: pyproject, CI job, `.wf.toml` check; CLAUDE.md command list.
+- [x] Wiring: pyproject, CI job, `.wf.toml` check; CLAUDE.md command list.
 - [ ] Outcome, verify, ship.
 
 ## Acceptance criteria
