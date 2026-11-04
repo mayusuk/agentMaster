@@ -3,7 +3,7 @@
 **Issue:** [#3](https://github.com/mayusuk/agentMaster/issues/3) (feature)
 **Branch:** `issue/3-settings-definition-and-loader`
 **Base:** `origin/main @ f792f1b` (checked before branching)
-**Status:** Draft
+**Status:** Done
 
 ## Summary
 
@@ -45,7 +45,7 @@ Each value keeps an `Origin` (layer plus file path, variable name or preset name
 - [x] Settings definition: `Setting`, `SETTINGS`, `PRESETS`, key matching with wildcards; tests that every default validates, keys are unique and preset keys exist.
 - [x] Loader core: file reading, flattening, version check and migrations, type validation, origins, unknown-key warnings; FR-19 AC4 and AC6 tests.
 - [x] Layers: user, project (fail-closed), environment, `--config`, flags, presets; precedence test setting one key in every source; FR-19 AC1 test.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -66,4 +66,16 @@ Standard checks. No fixtures beyond `tmp_path` files written by the tests. A tim
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:** `src/eagain/config/definition.py` (49 settings, including 14 per-tool and per-source capture overrides, plus the three presets) and `src/eagain/config/loader.py`. 43 unit tests in total, including 38 new ones. The criteria tests are named `test_fr19_ac1_*`, `test_fr19_ac4_*` and `test_fr19_ac6_*`, plus `test_precedence_one_key_set_in_every_source`.
+- **Deviations:**
+  - The two loader steps landed in one commit, because the layer tests exercise the core.
+  - The shipped presets set only capture and retention, and project config can't set those yet. So the precedence test gives one preset a value for `reports.formats` within the test, so that a single key can be set in all six sources.
+  - Environment variables use `-` → `_` (`EAGAIN_SOURCES_CLAUDE_CODE_PATHS`). Lists come either as a TOML array or comma-separated. `none` or an empty value clears an optional setting.
+  - `EAGAIN_HOME` and `EAGAIN_REQUIRE_CORPORA` are reserved and are not treated as typos.
+- **Decisions for review:**
+  - The `minimal` and `full` preset values are provisional.
+  - The explicit project ID key is named `project.id`.
+  - `--config` values sit in the flags layer.
+  - `EAGAIN_HOME` is a directory.
+- **For #4:** project config is fail-closed. Settings marked `tighten` or `literal` are ignored with a warning, and #4 implements them (FR-20 AC2, AC3).
+- **Follow-ups:** none filed. Report, LLM budget and operation settings without spec defaults belong to M2, M4 and M5.
