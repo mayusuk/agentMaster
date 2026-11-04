@@ -3,7 +3,7 @@
 **Issue:** [#6](https://github.com/mayusuk/agentMaster/issues/6) (feature)
 **Branch:** `issue/6-semconv-module-with-pinned-versions`
 **Base:** `origin/main @ 7f79edb` (checked before branching)
-**Status:** Draft
+**Status:** Done
 
 ## Summary
 
@@ -26,7 +26,7 @@ Adds `src/eagain/semconv.py`, which holds the pinned OpenTelemetry convention ve
 ## Steps
 
 - [x] `semconv.py` with pinned versions and every name, plus tests that every section 5 name has a constant, that extensions use the `eagain.` prefix, and that the module imports nothing from eagain.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -44,4 +44,7 @@ Standard checks. Checking against the upstream sources is a one-off manual step 
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:** `src/eagain/semconv.py` has 3 operations, 21 GenAI names, 7 core names and 8 extensions. It also has the `eagain.source.` prefix, the four outcome values, `PINNED_VERSIONS` and `is_extension()`. `tests/test_semconv.py` adds 6 tests, bringing the unit total to 49.
+- **Check result:** all 30 names from section 5 that come from the conventions exist at the pins. None was missing or renamed. The upstream files were read through the GitHub API into a scratch directory, and none were committed.
+- **Deviations:** `exception.type` is included alongside `exception.message`, because both are attributes of the conventions' exception events.
+- **Follow-ups:** none. #7 and #9 use these constants.
