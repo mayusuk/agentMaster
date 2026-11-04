@@ -333,8 +333,16 @@ def _build() -> tuple[Setting, ...]:
             [],
             "Extra patterns to redact",
             project=ProjectAccess.LITERAL,
+            # These hold the very strings a user wants kept out of output (FR-19 AC2).
+            secret=True,
         ),
-        _s("redaction.allowlist", Kind.STR_LIST, [], "Values never redacted (false positives)"),
+        _s(
+            "redaction.allowlist",
+            Kind.STR_LIST,
+            [],
+            "Values never redacted (false positives)",
+            secret=True,
+        ),
         _s("redaction.disabled", Kind.STR_LIST, [], "Built-in patterns to disable"),
         # Reports (Spec 001 FR-7; section 8 writes all formats by default).
         _s(

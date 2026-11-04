@@ -35,7 +35,7 @@ Adds `eagain config show [--origin]`, `eagain config validate` and `eagain confi
 
 ## Steps
 
-- [ ] Render module: TOML values, secret masking, `show` lines, `init` text, with unit tests (FR-19 AC2, AC5).
+- [x] Render module: TOML values, secret masking, `show` lines, `init` text, with unit tests (FR-19 AC2, AC5).
 - [ ] CLI `config show`, `config validate` and `config init`, with end-to-end tests through `main()` (FR-19 AC2, AC3, AC5).
 - [ ] Settings reference: `settings_markdown()`, the generator script, the committed `docs/settings.md`, and the up-to-date test (FR-19 AC9).
 - [ ] Update the project status line in `CLAUDE.md`, and fill in the Outcome.
