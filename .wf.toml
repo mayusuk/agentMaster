@@ -61,6 +61,11 @@ run = "uv run mypy"
 name = "unit"
 run = "uv run pytest"
 
+# Plan section 5, definition of done point 3: no untested criteria in finished milestones.
+[[verify]]
+name = "spec-coverage"
+run = "uv run python scripts/spec_coverage.py"
+
 # The corpus tier (plan section 5) is required for every PR once M1 task 9 builds it.
 # Download step only, before tests start (plan section 5). Shares the primary checkout's cache.
 [[verify]]

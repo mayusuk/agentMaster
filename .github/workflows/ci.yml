@@ -53,3 +53,14 @@ jobs:
         env:
           EAGAIN_REQUIRE_CORPORA: "1"
         run: uv run pytest -m corpus
+
+  spec-coverage:
+    name: Spec coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+      - name: Report criteria without tests in finished milestones
+        run: uv run --no-project python scripts/spec_coverage.py
