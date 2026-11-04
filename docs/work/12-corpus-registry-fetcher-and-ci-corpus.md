@@ -3,7 +3,7 @@
 **Issue:** [#12](https://github.com/mayusuk/agentMaster/issues/12) (feature)
 **Branch:** `issue/12-corpus-registry-fetcher-and-ci-corpus`
 **Base:** `origin/main @ 7f79edb` (checked before branching)
-**Status:** Draft
+**Status:** Done
 
 ## Summary
 
@@ -47,7 +47,7 @@ Adds the corpus test tier from plan section 5:
 - [x] Fetcher, pin, gate and count helpers, with unit tests on synthetic files served from `file://` URLs (hash mismatch, require flag, count messages).
 - [x] Pin the four corpora from real downloads; add the first corpus test, the test selection change, and the `.wf.toml` fetch step.
 - [x] CI `corpus` job with caching.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -70,4 +70,23 @@ Adds the corpus test tier from plan section 5:
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:**
+  - `tests/corpora/registry.toml`: 4 corpora, 1,202 `.jsonl` files, 190.8 MB, each with SHA-256, size and line count;
+  - `corpus_fetch.py` (fetch, pin, verify, shared cache);
+  - `corpus_gate.py` (skip, or fail when required);
+  - `count_assert.py`;
+  - the first corpus test (`test_corpus_files_match_the_registry`, one per corpus);
+  - a registry check in the unit tier;
+  - 23 unit tests on synthetic files served from `file://`;
+  - the `corpus` CI job;
+  - a `corpus-fetch` step in `.wf.toml`.
+- **Download:** pinning downloaded and hashed 190.8 MB in 292 s on this machine. A cached `fetch` re-verifies everything in under a second. The corpus tier takes about 0.6 s.
+- **Deviations:**
+  - choucsan has 1,017 data files, not 984. Plan section 5's count stopped at the first page of the Hugging Face tree API (988 files plus 12 directories fill a 1,000-entry page). The fetcher follows the `Link` header, and plan section 5 is corrected.
+  - `pytest` now runs only the unit tier (`not live and not corpus`). Otherwise corpus tests would skip in every unit run.
+  - Registry paths are checked to be relative with no `..`, so a tampered registry can't write outside the cache.
+- **Decisions for review:**
+  - Only `.jsonl` data files are pinned, not READMEs or images.
+  - The local cache is shared with the primary checkout through `.git`/`commondir`, so worktrees don't download 190 MB each. `EAGAIN_CORPORA_DIR` overrides the location.
+  - The CI corpus job runs on Python 3.14 only.
+- **Follow-ups:** none filed. #13 adds the oracle and expected counts on top of this.
