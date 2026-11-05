@@ -117,8 +117,42 @@ class Setting:
 
 def format_key(key: Sequence[str]) -> str:
     """Dotted form, quoting segments TOML would need quoted (``capture.tools."a.b".x``)."""
-    safe = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-*")
-    return ".".join(s if s and set(s) <= safe else f'"{s}"' for s in key)
+    return ".".join(s if s and set(s) <= _BARE_KEY else toml_string(s) for s in key)
+
+
+_BARE_KEY = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-*")
+
+
+_SHORT_ESCAPES = {
+    '"': '\\"',
+    "\\": "\\\\",
+    "\b": "\\b",
+    "\t": "\\t",
+    "\n": "\\n",
+    "\f": "\\f",
+    "\r": "\\r",
+}
+
+
+def toml_string(text: str) -> str:
+    """A TOML basic string, all-ASCII and printable. Keys can come from an untrusted
+    ``.eagain.toml`` (FR-20), so control characters never reach the terminal raw.
+
+    Code points above U+FFFF use ``\\UXXXXXXXX``: TOML accepts only scalar values in
+    escapes, so a UTF-16 surrogate pair would not parse back (D8).
+    """
+    out = []
+    for ch in text:
+        cp = ord(ch)
+        if ch in _SHORT_ESCAPES:
+            out.append(_SHORT_ESCAPES[ch])
+        elif 0x20 <= cp < 0x7F:
+            out.append(ch)
+        elif cp <= 0xFFFF:
+            out.append(f"\\u{cp:04x}")
+        else:
+            out.append(f"\\U{cp:08x}")
+    return '"' + "".join(out) + '"'
 
 
 def parse_key(name: str) -> KeyPath:
@@ -333,8 +367,16 @@ def _build() -> tuple[Setting, ...]:
             [],
             "Extra patterns to redact",
             project=ProjectAccess.LITERAL,
+            # These hold the very strings a user wants kept out of output (FR-19 AC2).
+            secret=True,
         ),
-        _s("redaction.allowlist", Kind.STR_LIST, [], "Values never redacted (false positives)"),
+        _s(
+            "redaction.allowlist",
+            Kind.STR_LIST,
+            [],
+            "Values never redacted (false positives)",
+            secret=True,
+        ),
         _s("redaction.disabled", Kind.STR_LIST, [], "Built-in patterns to disable"),
         # Reports (Spec 001 FR-7; section 8 writes all formats by default).
         _s(

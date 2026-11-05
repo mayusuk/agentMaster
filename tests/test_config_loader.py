@@ -80,7 +80,7 @@ def test_precedence_one_key_set_in_every_source(
     expected = [
         (["flag"], Origin(Layer.FLAG)),
         (["config-file"], Origin(Layer.CONFIG_FILE, str(extra))),
-        (["env"], Origin(Layer.ENV)),
+        (["env"], Origin(Layer.ENV, "EAGAIN_REPORTS_FORMATS")),
         (["project"], Origin(Layer.PROJECT, str(project))),
         (["user"], Origin(Layer.USER, str(user))),
         (["preset"], Origin(Layer.PRESET, "full")),
@@ -166,7 +166,7 @@ def test_environment_values_are_typed(home: Path, repo: Path) -> None:
     assert settings.get("sources.claude-code.paths") == ["/a", "/b"]
     assert settings.get("capture.exclude_tools") == ["Web,Fetch"]
     assert settings.get("project.id") is None
-    assert settings.origin("capture.diff_kb") == Origin(Layer.ENV)
+    assert settings.origin("capture.diff_kb") == Origin(Layer.ENV, "EAGAIN_CAPTURE_DIFF_KB")
     assert settings.warnings == []
 
 
