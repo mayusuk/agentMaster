@@ -116,7 +116,7 @@ Each milestone ends with its acceptance tests passing. Tasks are in order.
 ### M6 Release
 
 1. Contributor guides for rules and importers, with a sample plugin in tests.
-2. Generated settings docs, and a README updated with real commands and output.
+2. Review the generated settings docs (`docs/settings.md`, built in M1 by #5), and a README updated with real commands and output.
 3. Performance test against NFR-1 and NFR-12, using a generated 100 MB input.
 4. Reserve the PyPI name, then publish. Do a trademark search first.
 5. Update `CLAUDE.md` with real commands.
