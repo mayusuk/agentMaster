@@ -101,6 +101,23 @@ def test_fr19_ac2_show_never_prints_secret_values(
     assert shown in out
 
 
+def test_fr19_ac2_untrusted_keys_are_escaped_in_show_and_warnings(
+    env: Env, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A repository's .eagain.toml is untrusted (FR-20): its keys cannot write control
+    characters or unbalanced quotes to the terminal."""
+    env.write_project(
+        '[tool_names]\n"\\u001b[31mRED\\"q" = "x"\n[retention]\n"\\u001b[2Jclear\\u009b" = 1\n'
+    )
+    code, out, err = run(capsys, "config", "show")
+    assert code == ExitCode.OK
+    for stream in (out, err):
+        assert "\x1b" not in stream
+        assert "\x9b" not in stream
+    assert 'tool_names."\\u001b[31mRED\\"q" = "x"' in out.splitlines()
+    assert 'retention."\\u001b[2Jclear\\u009b": unknown setting' in err
+
+
 def test_fr19_ac2_project_config_can_be_skipped(
     env: Env, capsys: pytest.CaptureFixture[str]
 ) -> None:

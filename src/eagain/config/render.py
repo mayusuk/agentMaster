@@ -7,7 +7,6 @@ drift apart. These are pure functions; the CLI does the I/O.
 
 from __future__ import annotations
 
-import json
 import math
 import re
 from collections.abc import Iterator
@@ -24,6 +23,7 @@ from eagain.config.definition import (
     Setting,
     format_key,
     lookup,
+    toml_string,
 )
 from eagain.config.loader import CURRENT_VERSION, Settings, env_var
 
@@ -76,8 +76,7 @@ def toml_value(value: Any) -> str:
             return "inf" if value > 0 else "-inf"
         return repr(value)
     if isinstance(value, str):
-        # JSON string escapes are valid TOML basic-string escapes; TOML also bans raw DEL.
-        return json.dumps(value).replace("\x7f", "\\u007f")
+        return toml_string(value)
     if isinstance(value, list):
         return "[" + ", ".join(toml_value(v) for v in value) + "]"
     raise TypeError(f"no TOML form for {type(value).__name__}")

@@ -9,6 +9,7 @@ features not built yet are added by the task that builds the feature.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -117,8 +118,17 @@ class Setting:
 
 def format_key(key: Sequence[str]) -> str:
     """Dotted form, quoting segments TOML would need quoted (``capture.tools."a.b".x``)."""
-    safe = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-*")
-    return ".".join(s if s and set(s) <= safe else f'"{s}"' for s in key)
+    return ".".join(s if s and set(s) <= _BARE_KEY else toml_string(s) for s in key)
+
+
+_BARE_KEY = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-*")
+
+
+def toml_string(text: str) -> str:
+    """A TOML basic string, all-ASCII and printable. Keys can come from an untrusted
+    ``.eagain.toml`` (FR-20), so control characters never reach the terminal raw."""
+    # JSON escapes are valid TOML basic-string escapes; TOML also bans raw DEL.
+    return json.dumps(text).replace("\x7f", "\\u007f")
 
 
 def parse_key(name: str) -> KeyPath:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import tomllib
+
 import pytest
 
 from eagain.config.definition import (
@@ -100,6 +102,21 @@ def test_format_key_quotes_unusual_segments() -> None:
         'capture.tools."mcp.server.tool".diff_kb'
     )
     assert format_key(parse_key("retention.max_store_mb")) == "retention.max_store_mb"
+
+
+@pytest.mark.parametrize(
+    "segment",
+    [
+        *('say "hi"', "back\\slash", "\x1b[2Jclear", "tab\tnew\nline"),
+        *("del\x7f", "c1\x9b31m", "naïve", ""),
+    ],
+)
+def test_format_key_escapes_quoted_segments_as_toml(segment: str) -> None:
+    """Keys can come from an untrusted .eagain.toml (FR-20), so they are printed escaped."""
+    shown = format_key(("tool_names", segment))
+    assert shown.isascii()
+    assert shown.isprintable()
+    assert tomllib.loads(f"{shown} = 1") == {"tool_names": {segment: 1}}
 
 
 def test_every_tightened_setting_says_which_way_is_stricter() -> None:
