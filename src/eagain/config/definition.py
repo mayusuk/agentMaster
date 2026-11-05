@@ -9,7 +9,6 @@ features not built yet are added by the task that builds the feature.
 
 from __future__ import annotations
 
-import json
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -124,11 +123,36 @@ def format_key(key: Sequence[str]) -> str:
 _BARE_KEY = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-*")
 
 
+_SHORT_ESCAPES = {
+    '"': '\\"',
+    "\\": "\\\\",
+    "\b": "\\b",
+    "\t": "\\t",
+    "\n": "\\n",
+    "\f": "\\f",
+    "\r": "\\r",
+}
+
+
 def toml_string(text: str) -> str:
     """A TOML basic string, all-ASCII and printable. Keys can come from an untrusted
-    ``.eagain.toml`` (FR-20), so control characters never reach the terminal raw."""
-    # JSON escapes are valid TOML basic-string escapes; TOML also bans raw DEL.
-    return json.dumps(text).replace("\x7f", "\\u007f")
+    ``.eagain.toml`` (FR-20), so control characters never reach the terminal raw.
+
+    Code points above U+FFFF use ``\\UXXXXXXXX``: TOML accepts only scalar values in
+    escapes, so a UTF-16 surrogate pair would not parse back (D8).
+    """
+    out = []
+    for ch in text:
+        cp = ord(ch)
+        if ch in _SHORT_ESCAPES:
+            out.append(_SHORT_ESCAPES[ch])
+        elif 0x20 <= cp < 0x7F:
+            out.append(ch)
+        elif cp <= 0xFFFF:
+            out.append(f"\\u{cp:04x}")
+        else:
+            out.append(f"\\U{cp:08x}")
+    return '"' + "".join(out) + '"'
 
 
 def parse_key(name: str) -> KeyPath:

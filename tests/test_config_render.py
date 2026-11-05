@@ -25,7 +25,7 @@ from eagain.config.render import (
     "value",
     [
         *(True, False, 0, 2048, 0.5, -1.25, math.inf, -math.inf),
-        *("", 'quote " and \\ back', "tab\tnew\nline\x7f"),
+        *("", 'quote " and \\ back', "tab\tnew\nline\x7f", "emoji \U0001f600"),
         *([], ["a", "b"]),
     ],
 )

@@ -109,6 +109,8 @@ def test_format_key_quotes_unusual_segments() -> None:
     [
         *('say "hi"', "back\\slash", "\x1b[2Jclear", "tab\tnew\nline"),
         *("del\x7f", "c1\x9b31m", "naïve", ""),
+        # Outside the BMP: TOML needs \UXXXXXXXX, not a UTF-16 surrogate pair (review R7).
+        *("emoji\U0001f600", "\U00020000cjk-ext-b", "\U0010ffff"),
     ],
 )
 def test_format_key_escapes_quoted_segments_as_toml(segment: str) -> None:
