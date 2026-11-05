@@ -79,3 +79,5 @@ Built as planned: `config show [--origin]`, `config validate` and `config init` 
 No deviations from the approach. The generator was brought forward from plan M6.2 (D6). D3 (redaction of displayed values and disabled-pattern flagging) waits for M2.1 and goes to the spec follow-up issue with the other decisions. No new issues were filed.
 
 Review round 1 (PR #24): all six findings were valid and changed the branch, with no pushbacks. R1: environment values now name their variable. R2: untrusted keys are printed escaped (D8). R3: URL masking runs to the last `@` (D2). R4: details recorded as D9 to D14. R5: a test for warnings alongside errors. R6: plan M6.2 narrowed. A coverage check (coverage.py, branch mode) then found untested branches in `render.py` and the generator. Tests were added for them, and the changed files are now fully covered.
+
+Review round 2: R7 was valid and fixed. Characters outside the BMP were escaped as surrogate pairs, which TOML rejects, so `toml_string` now escapes one character at a time (D8). There were no pushbacks.
