@@ -13,6 +13,7 @@ from eagain.config.render import (
     display_value,
     example_key,
     init_text,
+    mask_url_credentials,
     show_lines,
     toml_value,
 )
@@ -91,6 +92,27 @@ def test_fr19_ac2_url_credentials_are_masked() -> None:
     paths = lookup(parse_key("sources.claude-code.paths"))
     shown = display_value(paths, ["ftp://me:pw@host/x", "~/logs"])
     assert shown == '["ftp://***@host/x", "~/logs"]'
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        # Raw tokens pasted into userinfo may contain "@" or "/" (review R3).
+        ("https://me:p@ss@host/v1", "https://***@host/v1"),
+        ("https://me:pa/ss@host", "https://***@host"),
+        ("https://token@host", "https://***@host"),
+        # No userinfo: nothing to mask.
+        ("https://host/v1", "https://host/v1"),
+        ("http://localhost:8080", "http://localhost:8080"),
+        # Two URLs in one value are masked separately.
+        ("a https://u:p@one b https://u:q@two", "a https://***@one b https://***@two"),
+        # An "@" later in the URL cannot be told apart from one in a password, so the
+        # masking errs towards hiding (D2).
+        ("https://host/users/@me", "https://***@me"),
+    ],
+)
+def test_fr19_ac2_url_credentials_are_masked_up_to_the_last_at(url: str, expected: str) -> None:
+    assert mask_url_credentials(url) == expected
 
 
 def test_only_redaction_lists_are_secret() -> None:

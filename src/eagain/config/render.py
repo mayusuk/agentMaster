@@ -30,8 +30,9 @@ from eagain.config.loader import CURRENT_VERSION, Settings, env_var
 DOC_PATH = "docs/settings.md"
 DOC_COMMAND = "uv run python scripts/gen_settings_docs.py"
 
-# Credentials in a URL's userinfo part (``https://user:token@host``).
-_URL_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)[^/\s@]+@")
+# Credentials in a URL's userinfo part (``https://user:token@host``). Raw tokens may hold
+# "@" or "/", so everything up to the URL's last "@" is masked (D2), erring towards hiding.
+_URL_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)\S*@")
 
 # Names for wildcard segments, keyed by the segments before them (``config init`` and docs).
 _PLACEHOLDERS: dict[KeyPath, str] = {
