@@ -71,6 +71,20 @@ def test_fr19_ac2_show_origin_names_the_source(tmp_path: Path) -> None:
     )
 
 
+def test_fr19_ac2_wildcard_keys_are_sorted_after_their_pattern() -> None:
+    settings = defaults()
+    for tool in ("Write", "Bash", "WebFetch"):
+        key = ("capture", "tools", tool, "diff_kb")
+        settings.values[key] = 1
+        settings.origins[key] = Origin(Layer.USER, "u.toml")
+    names = [line.split(" = ", 1)[0] for line in show_lines(settings)]
+    tools = [n for n in names if n.startswith("capture.tools.")]
+    assert tools == [f"capture.tools.{t}.diff_kb" for t in ("Bash", "WebFetch", "Write")]
+    # They sit together, where the pattern is in the definition.
+    first = names.index(tools[0])
+    assert names[first : first + 3] == tools
+
+
 def test_fr19_ac2_secret_settings_are_never_printed() -> None:
     settings = defaults()
     settings.values[parse_key("redaction.patterns")] = ["acme-internal-token-123"]
