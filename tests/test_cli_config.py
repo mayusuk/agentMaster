@@ -175,6 +175,21 @@ def test_fr19_ac3_invalid_config_exits_2_naming_file_key_and_reason(
     assert reason in err
 
 
+def test_fr19_ac3_invalid_config_still_reports_its_warnings(
+    env: Env, capsys: pytest.CaptureFixture[str]
+) -> None:
+    user = env.write_user("[capture]\nmessage_kb = -1\nmesage_kb = 1\n")
+    code, out, err = run(capsys, "config", "validate")
+    assert (code, out) == (ExitCode.INVALID_INPUT, "")
+    lines = err.splitlines()
+    warning = next(line for line in lines if line.startswith("warning: "))
+    assert warning.startswith(f"warning: {user}: capture.mesage_kb: unknown setting")
+    assert "capture.message_kb" in warning
+    assert f"error: {user}: capture.message_kb: must be at least 0" in lines
+    # Warnings come first, so the error is the last thing on screen.
+    assert lines.index(warning) < len(lines) - 1
+
+
 def test_fr19_ac3_every_error_is_reported(env: Env, capsys: pytest.CaptureFixture[str]) -> None:
     env.write_user("[capture]\nmessage_kb = -1\ndiff_kb = -1\n")
     _, _, err = run(capsys, "config", "validate")
