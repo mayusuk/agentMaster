@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+import math
 import tomllib
 from pathlib import Path
 
@@ -22,7 +24,7 @@ from eagain.config.render import (
 @pytest.mark.parametrize(
     "value",
     [
-        *(True, False, 0, 2048, 0.5, -1.25),
+        *(True, False, 0, 2048, 0.5, -1.25, math.inf, -math.inf),
         *("", 'quote " and \\ back', "tab\tnew\nline\x7f"),
         *([], ["a", "b"]),
     ],
@@ -34,6 +36,12 @@ def test_toml_value_round_trips(value: object) -> None:
 def test_toml_value_has_no_null() -> None:
     with pytest.raises(ValueError, match="no null"):
         toml_value(None)
+
+
+def test_toml_value_nan_and_unsupported_types() -> None:
+    assert math.isnan(tomllib.loads(f"v = {toml_value(math.nan)}")["v"])
+    with pytest.raises(TypeError, match="no TOML form for dict"):
+        toml_value({"a": 1})
 
 
 def defaults() -> Settings:
@@ -71,6 +79,14 @@ def test_fr19_ac2_show_origin_names_the_source(tmp_path: Path) -> None:
     )
 
 
+def test_fr19_ac2_show_skips_a_setting_that_has_no_value() -> None:
+    settings = defaults()
+    del settings.values[parse_key("retention.max_traces")]
+    names = [line.split(" = ", 1)[0] for line in show_lines(settings)]
+    assert "retention.max_traces" not in names
+    assert len(names) == len(list(concrete_settings())) - 1
+
+
 def test_fr19_ac2_wildcard_keys_are_sorted_after_their_pattern() -> None:
     settings = defaults()
     for tool in ("Write", "Bash", "WebFetch"):
@@ -96,6 +112,14 @@ def test_fr19_ac2_secret_settings_are_never_printed() -> None:
     assert "redaction.allowlist = <hidden: 2 values>" in out
     # Nothing is hidden when there is nothing to hide.
     assert display_value(lookup(parse_key("redaction.patterns")), []) == "[]"
+
+
+def test_fr19_ac2_secret_string_values_are_hidden() -> None:
+    endpoint = lookup(parse_key("llm.endpoint"))
+    assert endpoint is not None
+    setting = dataclasses.replace(endpoint, secret=True)
+    assert display_value(setting, "https://llm.example.test") == "<hidden>"
+    assert display_value(setting, "") == '""'
 
 
 def test_fr19_ac2_url_credentials_are_masked() -> None:

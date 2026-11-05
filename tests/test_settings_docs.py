@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import runpy
+import sys
 from pathlib import Path
 
 import gen_settings_docs
+import pytest
 
 from eagain.config.definition import PRESETS, SETTINGS, format_key
 from eagain.config.loader import env_var
@@ -54,6 +57,29 @@ def test_generator_check_and_write(tmp_path: Path) -> None:
     assert gen_settings_docs.main(["--root", str(tmp_path)]) == 0
     assert (tmp_path / DOC_PATH).read_text(encoding="utf-8") == settings_markdown()
     assert gen_settings_docs.main(["--check", "--root", str(tmp_path)]) == 0
+
+
+def test_generator_leaves_an_up_to_date_file_alone(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    doc = tmp_path / DOC_PATH
+    doc.parent.mkdir(parents=True)
+    doc.write_text(settings_markdown(), encoding="utf-8")
+    before = doc.stat().st_mtime_ns
+    assert gen_settings_docs.main(["--root", str(tmp_path)]) == 0
+    assert capsys.readouterr().out == ""
+    assert doc.stat().st_mtime_ns == before
+
+
+def test_generator_runs_as_a_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = ROOT / "scripts" / "gen_settings_docs.py"
+    monkeypatch.setattr(sys, "argv", [str(script), "--check", "--root", str(tmp_path)])
+    with pytest.raises(SystemExit) as exc:
+        runpy.run_path(str(script), run_name="__main__")
+    assert exc.value.code == 1
+    assert f"run `{DOC_COMMAND}`" in capsys.readouterr().err
 
 
 def test_generator_check_passes_on_the_repository() -> None:
