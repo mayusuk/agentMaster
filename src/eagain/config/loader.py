@@ -193,7 +193,9 @@ def load(
                 if value is _SKIP:
                     continue
             values[key] = value
-            origins[key] = Origin(src.layer, src.name)
+            # An environment value names its own variable (Spec 003 section 6 step 3).
+            name = env_var(key) if src.layer is Layer.ENV else src.name
+            origins[key] = Origin(src.layer, name)
 
     if out.errors:
         raise ConfigError(out.errors, out.warnings)

@@ -216,7 +216,7 @@ def test_fr20_ac2_environment_and_flags_may_still_loosen(home: Path, repo: Path)
     project(repo, "[capture]\nmessage_kb = 1\n")
     settings = load(env={"EAGAIN_CAPTURE_MESSAGE_KB": "32"}, home=home, cwd=repo)
     assert settings.get("capture.message_kb") == 32
-    assert settings.origin("capture.message_kb") == Origin(Layer.ENV)
+    assert settings.origin("capture.message_kb") == Origin(Layer.ENV, "EAGAIN_CAPTURE_MESSAGE_KB")
 
 
 # --- AC3: redaction patterns are literal ---------------------------------------

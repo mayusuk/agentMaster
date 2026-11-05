@@ -80,7 +80,7 @@ def test_fr19_ac2_show_origin_attributes_each_source(
     lines = out.splitlines()
     assert f"retention.max_store_mb = 100  # user config ({user})" in lines
     assert f"rules.retry-loop.min_attempts = 5  # project config ({project})" in lines
-    assert "retention.max_traces = 10  # environment" in lines
+    assert "retention.max_traces = 10  # environment (EAGAIN_RETENTION_MAX_TRACES)" in lines
     assert f'operation.log_level = "debug"  # --config ({other})' in lines
     assert "capture.message_kb = 4  # default" in lines
 
@@ -97,7 +97,8 @@ def test_fr19_ac2_show_never_prints_secret_values(
     assert code == ExitCode.OK
     for secret in ("corp-token-abc123", "other-secret", "AKIAFAKEFAKEFAKE", "hunter2"):
         assert secret not in out + err
-    assert "redaction.patterns = <hidden: 2 values>  # environment" in out
+    shown = "redaction.patterns = <hidden: 2 values>  # environment (EAGAIN_REDACTION_PATTERNS)"
+    assert shown in out
 
 
 def test_fr19_ac2_project_config_can_be_skipped(

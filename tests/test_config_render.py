@@ -60,7 +60,7 @@ def test_fr19_ac2_show_origin_names_the_source(tmp_path: Path) -> None:
     user.write_text("[capture.tools.WebFetch]\ntool_output_ok_kb = 0.5\n", encoding="utf-8")
     settings = load(env={"EAGAIN_RETENTION_MAX_TRACES": "10"}, home=home, cwd=repo)
     lines = show_lines(settings, origin=True)
-    assert "retention.max_traces = 10  # environment" in lines
+    assert "retention.max_traces = 10  # environment (EAGAIN_RETENTION_MAX_TRACES)" in lines
     assert "retention.max_store_mb = 2048  # default" in lines
     assert f"capture.tools.WebFetch.tool_output_ok_kb = 0.5  # user config ({user})" in lines
     # A key set under a wildcard follows its pattern's place in the definition.
