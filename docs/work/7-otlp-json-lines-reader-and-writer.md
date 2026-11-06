@@ -27,7 +27,7 @@ Adds `src/eagain/otlp/`, a hand-written reader and writer for the OTLP File form
 
 ## Steps
 
-- [ ] Data types and writer, with the fixed field order and the omission rules, plus the determinism test.
+- [x] Data types and writer, with the fixed field order and the omission rules, plus the determinism test.
 - [ ] Reader: value decoding, IDs, timestamps, per-line errors, logs and metrics detection, plus tests for each kind of error and for continuing past a bad line.
 - [ ] Hypothesis round-trip property test over generated spans with every attribute value type.
 - [ ] Outcome, verify, ship.
