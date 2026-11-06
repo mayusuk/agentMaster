@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from corpus_fetch import HERE, Corpus, load_registry
 from oracle import COUNT_KEYS, DENIAL_MARKER, INTERRUPT_MARKER, OTHER_TYPE, expand, main, scan
+from update_expected import expected_path, render
 
 ORACLE = Path(__file__).with_name("oracle.py")
 CANARY = "planted-transcript-text-that-must-never-be-printed"
@@ -238,3 +240,38 @@ def test_oracle_imports_nothing_from_eagain() -> None:
     assert "eagain" not in imported
     assert "importlib" not in imported
     assert sorted(m for m in imported if m not in sys.stdlib_module_names) == []
+
+
+# --- Committed expected files (no corpus data needed) -------------------------
+
+
+@pytest.mark.parametrize("corpus", load_registry(), ids=lambda c: c.id)
+def test_expected_counts_are_committed_for_every_corpus(corpus: Corpus) -> None:
+    path = expected_path(corpus.id)
+    assert path.is_file(), f"{path.name} is missing; run tests/corpora/update_expected.py"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert set(data) == {"corpus", "revision", "counts"}
+    assert (data["corpus"], data["revision"]) == (corpus.id, corpus.revision), (
+        f"{path.name} is stale for the pinned revision; regenerate it"
+    )
+    counts = data["counts"]
+    assert list(counts) == list(COUNT_KEYS)
+    assert all(type(v) is int and v >= 0 for v in counts.values())
+    assert counts["files"] == len(corpus.files)
+    assert counts["permission_denials"] <= counts["tool_errors"] <= counts["tool_results"]
+
+
+def test_no_expected_file_without_a_registry_corpus() -> None:
+    ids = {c.id for c in load_registry()}
+    stray = sorted(
+        p.name for p in HERE.glob("*.expected.json") if p.name[: -len(".expected.json")] not in ids
+    )
+    assert stray == []
+
+
+def test_expected_files_render_as_the_update_script_writes_them() -> None:
+    for corpus in load_registry():
+        data = json.loads(expected_path(corpus.id).read_text(encoding="utf-8"))
+        assert expected_path(corpus.id).read_text(encoding="utf-8") == render(
+            corpus, data["counts"]
+        )

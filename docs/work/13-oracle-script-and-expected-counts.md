@@ -40,7 +40,7 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 ## Steps
 
 - [x] Oracle with unit tests on synthetic transcripts, including the import-independence test.
-- [ ] Hand-check on a sample. Generate and commit the four expected files with the update script. Add the expected-file unit test and the corpus-tier agreement test. Correct plan section 6.
+- [x] Hand-check on a sample. Generate and commit the four expected files with the update script. Add the expected-file unit test and the corpus-tier agreement test. Correct plan section 6.
 - [ ] Outcome, verify, ship.
 
 ## Acceptance criteria
@@ -57,8 +57,8 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 - **D4** [gap] Plan section 6, interrupts: An interrupt is a user record whose string content or text blocks contain `[Request interrupted by user`, counted once per record. Text inside tool result content does not count. Why: this matches section 6's 43, and the marker never appears in tool results.
 - **D5** [gap] Plan section 5, point 2: A subagent run is a distinct `(sessionId, agentId)` pair on records with `isSidechain: true`, whatever the file layout. Agent tool calls with no transcript (choucsan: 53) are not runs. Why: FR-3 AC2 makes sidechain records the child `invoke_agent` spans, so the oracle counts what the importer can see. This covers both layouts in section 6.
 - **D6** [gap] Plan section 5, point 2: Expected files also hold `files`, `records`, `blank_lines`, `malformed_lines` and `sessions` (distinct `sessionId` values), plus the pinned `revision` to detect stale counts. A line that parses but is not a JSON object counts as malformed. Why: these support the accounting check (section 5, point 1) at no cost, and the revision is an ID, not content.
-- **D8** [gap] Plan section 5, "Live tests": The oracle's `records_by_type` keeps only record type names that look like identifiers (lowercase, digits, `-` and `_`, up to 40 characters), and counts any other name as `<other>`. Lines are decoded as UTF-8, and a line that is not valid UTF-8 counts as malformed. Why: type names reach the live summary in #15, and the input is untrusted.
 - **D7** [gap] Plan section 5, point 2: Expected files are regenerated with `tests/corpora/update_expected.py`, which scans exactly the files listed in the registry, never by searching the cache directory. Why: a stray file in the shared cache must not change the counts.
+- **D8** [gap] Plan section 5, "Live tests": The oracle's `records_by_type` keeps only record type names that look like identifiers (lowercase, digits, `-` and `_`, up to 40 characters), and counts any other name as `<other>`. Lines are decoded as UTF-8, and a line that is not valid UTF-8 counts as malformed. Why: type names reach the live summary in #15, and the input is untrusted.
 
 ## Verification
 

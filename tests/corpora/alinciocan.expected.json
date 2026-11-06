@@ -1,0 +1,19 @@
+{
+  "corpus": "alinciocan",
+  "revision": "e33ebbca230ae258b2c28aeee9fe3429e7fbeab6",
+  "counts": {
+    "files": 18,
+    "records": 9497,
+    "blank_lines": 0,
+    "malformed_lines": 0,
+    "sessions": 18,
+    "tool_results": 1170,
+    "tool_errors": 57,
+    "interrupts": 1,
+    "permission_denials": 0,
+    "permission_decisions_rejected": 0,
+    "api_error_records": 0,
+    "api_error_messages": 6,
+    "subagent_runs": 0
+  }
+}
