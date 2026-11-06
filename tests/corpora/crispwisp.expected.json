@@ -1,0 +1,19 @@
+{
+  "corpus": "crispwisp",
+  "revision": "c2c90b59174318ab0b163ec9c9ac82bb879288ce",
+  "counts": {
+    "files": 104,
+    "records": 10698,
+    "blank_lines": 0,
+    "malformed_lines": 2,
+    "sessions": 61,
+    "tool_results": 2207,
+    "tool_errors": 103,
+    "interrupts": 31,
+    "permission_denials": 8,
+    "permission_decisions_rejected": 0,
+    "api_error_records": 0,
+    "api_error_messages": 14,
+    "subagent_runs": 41
+  }
+}

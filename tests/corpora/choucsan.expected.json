@@ -1,0 +1,19 @@
+{
+  "corpus": "choucsan",
+  "revision": "39cc3fc3ed608fff800220445bad9eb1738516f8",
+  "counts": {
+    "files": 1017,
+    "records": 15046,
+    "blank_lines": 0,
+    "malformed_lines": 0,
+    "sessions": 1017,
+    "tool_results": 5271,
+    "tool_errors": 223,
+    "interrupts": 2,
+    "permission_denials": 0,
+    "permission_decisions_rejected": 0,
+    "api_error_records": 0,
+    "api_error_messages": 0,
+    "subagent_runs": 0
+  }
+}

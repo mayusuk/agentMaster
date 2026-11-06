@@ -1,0 +1,19 @@
+{
+  "corpus": "armand0e",
+  "revision": "7388ef96f3179f23b6b3618b96572f1aa9b84510",
+  "counts": {
+    "files": 63,
+    "records": 18370,
+    "blank_lines": 0,
+    "malformed_lines": 0,
+    "sessions": 55,
+    "tool_results": 4166,
+    "tool_errors": 191,
+    "interrupts": 43,
+    "permission_denials": 20,
+    "permission_decisions_rejected": 0,
+    "api_error_records": 5,
+    "api_error_messages": 50,
+    "subagent_runs": 8
+  }
+}

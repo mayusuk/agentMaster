@@ -191,7 +191,7 @@ A first look at the primary corpus and at local logs, counting structure only, a
 | Tool errors | `is_error` on 191 of 4,166 tool results in the primary corpus | Maps directly to `outcome: error` |
 | Permission denials | 20 error results with denial wording. Newer versions also have a `permissionDecision` field, but only `accept` values have been seen | Detect from both. Confirm what a rejection looks like |
 | User interrupts | 43 `[Request interrupted by user` markers | Becomes `eagain.interrupt` |
-| API errors | 5 `system` records with subtype `api_error`, and 59 assistant records flagged `isApiErrorMessage` with model `<synthetic>` | `runtime-error`. Synthetic records are not counted as model calls |
+| API errors | 5 `system` records with subtype `api_error`, and 50 assistant records flagged `isApiErrorMessage` with model `<synthetic>` (the first count of 59 included 9 records with the flag set to `false`) | `runtime-error`. Synthetic records are not counted as model calls |
 | Compaction | Not seen in any sample | `context-pressure` cannot be tested on real data yet. Needs a source that contains it |
 | Subagents | Top-level `agent-*.jsonl` files in the dataset, but a `subagents/` folder in current local logs | Support both layouts |
 | Format drift | Datasets are 2.1.168 to 2.1.176. Local logs are 2.1.316, and add `api-request*`, `atis-latch` and `permissionDecision` records | Live tests are the only check on the newer format |
