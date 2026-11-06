@@ -76,7 +76,7 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 - **Done:**
   - `tests/corpora/oracle.py`: the standalone oracle (standard library only), with a `scan` API and a CLI that prints counts and record type names only.
   - `tests/corpora/<id>.expected.json` for armand0e, alinciocan, crispwisp and choucsan, and `tests/corpora/update_expected.py` to regenerate them.
-  - Unit tier: 17 oracle tests on synthetic transcripts, including the import-independence test (`test_oracle_imports_nothing_from_eagain`) and a planted-text check on the CLI output. Also 6 expected-file tests: one per corpus, no stray files, and the files match what the update script writes.
+  - Unit tier: 14 oracle tests on synthetic transcripts, including the import-independence test (`test_oracle_imports_nothing_from_eagain`) and a planted-text check on the CLI output. Also 6 expected-file tests: one per corpus, no stray files, and the files match what the update script writes.
   - Corpus tier: `test_oracle_reproduces_the_expected_counts`, one per corpus, which compares with `assert_counts` and checks that records, blank lines and malformed lines add up to the registry's line count. The tier takes about 1.3 s.
   - Plan section 6: the API error count is corrected from 59 to 50 (D3).
 - **Hand-check (aggregates only):**
