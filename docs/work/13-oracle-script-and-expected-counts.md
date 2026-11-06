@@ -3,7 +3,7 @@
 **Issue:** [#13](https://github.com/mayusuk/agentMaster/issues/13) (feature)
 **Branch:** `issue/13-oracle-script-and-expected-counts`
 **Base:** `origin/main @ 698a463` (checked before branching)
-**Status:** In progress
+**Status:** Done
 
 ## Summary
 
@@ -41,7 +41,7 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 
 - [x] Oracle with unit tests on synthetic transcripts, including the import-independence test.
 - [x] Hand-check on a sample. Generate and commit the four expected files with the update script. Add the expected-file unit test and the corpus-tier agreement test. Correct plan section 6.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -59,6 +59,7 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 - **D6** [gap] Plan section 5, point 2: Expected files also hold `files`, `records`, `blank_lines`, `malformed_lines` and `sessions` (distinct `sessionId` values), plus the pinned `revision` to detect stale counts. A line that parses but is not a JSON object counts as malformed. Why: these support the accounting check (section 5, point 1) at no cost, and the revision is an ID, not content.
 - **D7** [gap] Plan section 5, point 2: Expected files are regenerated with `tests/corpora/update_expected.py`, which scans exactly the files listed in the registry, never by searching the cache directory. Why: a stray file in the shared cache must not change the counts.
 - **D8** [gap] Plan section 5, "Live tests": The oracle's `records_by_type` keeps only record type names that look like identifiers (lowercase, digits, `-` and `_`, up to 40 characters), and counts any other name as `<other>`. Lines are decoded as UTF-8, and a line that is not valid UTF-8 counts as malformed. Why: type names reach the live summary in #15, and the input is untrusted.
+- **D9** [gap] Plan section 5, point 2: The oracle CLI exits 2, printing nothing on stdout, when it gets no paths, an option, or a path that does not exist. Its JSON output has sorted keys. Why: the issue fixes no interface, and #15 calls it as a command.
 
 ## Verification
 
@@ -72,4 +73,17 @@ Adds the independent oracle from plan section 5 ("What corpus tests check", poin
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:**
+  - `tests/corpora/oracle.py`: the standalone oracle (standard library only), with a `scan` API and a CLI that prints counts and record type names only.
+  - `tests/corpora/<id>.expected.json` for armand0e, alinciocan, crispwisp and choucsan, and `tests/corpora/update_expected.py` to regenerate them.
+  - Unit tier: 17 oracle tests on synthetic transcripts, including the import-independence test (`test_oracle_imports_nothing_from_eagain`) and a planted-text check on the CLI output. Also 6 expected-file tests: one per corpus, no stray files, and the files match what the update script writes.
+  - Corpus tier: `test_oracle_reproduces_the_expected_counts`, one per corpus, which compares with `assert_counts` and checks that records, blank lines and malformed lines add up to the registry's line count. The tier takes about 1.3 s.
+  - Plan section 6: the API error count is corrected from 59 to 50 (D3).
+- **Hand-check (aggregates only):**
+  - Method: an independent second count, written separately from the oracle, matched byte patterns on raw lines (JSON keys and flags, plus the denial and interrupt markers) without parsing JSON. It was compared with the oracle file by file, for every signal.
+  - Sample: 40 files (the 10 lowest SHA-256 hashes from each corpus). It covered 1,689 tool results, 66 errors, 12 interrupts, 5 denials, 7 API error messages and 7 subagent runs. Both methods agreed on all 40 files for every signal.
+  - The sample had no `api_error` system records, so the same comparison was repeated on all 1,202 files. They agreed on every signal in every file, except one tool result. That match is inside one of crispwisp's 2 malformed lines, which the oracle correctly skips.
+  - armand0e matches the separately measured figures in plan section 6: 4,166 tool results, 191 errors, 20 denials, 43 interrupts, 5 `api_error` records and 8 subagent files. The one exception is the API error message count (50 here, 59 in section 6), explained in D3.
+  - Negative check: changing one expected count made the corpus test fail, with a message holding only the key and the two numbers.
+- **Deviations:** none from the approach.
+- **Follow-ups:** none filed. #15 runs this oracle on `~/.claude/projects` for the M1 live run. M3.5 compares the importer with these counts, using `tool_errors - permission_denials` for `error` outcomes (D1).
