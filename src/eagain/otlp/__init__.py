@@ -22,15 +22,28 @@ from eagain.otlp.data import (
     TracesData,
     Value,
 )
+from eagain.otlp.reader import (
+    ErrorKind,
+    Line,
+    LineError,
+    OtlpFormatError,
+    decode_line,
+    read_file,
+    read_lines,
+)
 from eagain.otlp.writer import dumps, encode_line, write_lines
 
 __all__ = [
     "Attributes",
+    "ErrorKind",
     "Event",
     "InstrumentationScope",
     "KeyValue",
     "KvList",
+    "Line",
+    "LineError",
     "Link",
+    "OtlpFormatError",
     "Resource",
     "ResourceSpans",
     "ScopeSpans",
@@ -40,7 +53,10 @@ __all__ = [
     "StatusCode",
     "TracesData",
     "Value",
+    "decode_line",
     "dumps",
     "encode_line",
+    "read_file",
+    "read_lines",
     "write_lines",
 ]
