@@ -21,7 +21,7 @@ Adds `src/eagain/otlp/`, a hand-written reader and writer for the OTLP File form
 ## Approach
 
 - `otlp/data.py`: frozen dataclasses that mirror the OTLP trace messages. `TracesData` (one line) holds `ResourceSpans`, which hold a `Resource` and `ScopeSpans`, which hold an `InstrumentationScope` and `Span`s. A `Span` has `Event`s, `Link`s and a `Status`. Attributes are an ordered tuple of `KeyValue(key, value)`. Attribute values are native Python values: `str`, `bool`, `int`, `float`, `bytes`, `tuple` (array), `KvList` (kvlist), or `None` (empty `AnyValue`). Tuples keep the order and keep duplicate keys, so a read followed by a write never changes them.
-- `otlp/writer.py`: `encode_line(TracesData) -> str` builds dicts in a fixed key order and dumps them compactly, with UTF-8 left as is. `write_lines(Iterable[TracesData], BinaryIO)` writes one line per item, each ending in `\n`. `dumps` returns the bytes. Only the given structure decides the bytes, and nothing is sorted or reordered.
+- `otlp/writer.py`: `encode_line(TracesData) -> str` builds dicts in a fixed key order and dumps them compactly, with UTF-8 left as is. `write_lines(Iterable[TracesData], BinaryIO)` writes one line per item, each ending in `\n`. `dumps` returns the bytes. Only the given structure decides the bytes, and nothing is sorted or reordered. The writer raises `ValueError` for anything its own reader would reject, so it never writes a file it cannot read back.
 - `otlp/reader.py`: `decode_line(str) -> TracesData` raises `OtlpFormatError(reason)`. The reason includes a JSON path such as `resourceSpans[0].scopeSpans[0].spans[2].traceId`. `read_lines(Iterable[bytes])` and `read_file(path)` yield `Line(line_no, data)` or `LineError(line_no, kind, reason)` for each non-blank line. `kind` is `malformed`, `logs` or `metrics`. The file is opened read-only, in binary mode.
 - `otlp/__init__.py` re-exports the public names.
 
@@ -29,7 +29,7 @@ Adds `src/eagain/otlp/`, a hand-written reader and writer for the OTLP File form
 
 - [x] Data types and writer, with the fixed field order and the omission rules, plus the determinism test.
 - [x] Reader: value decoding, IDs, timestamps, per-line errors, logs and metrics detection, plus tests for each kind of error and for continuing past a bad line.
-- [ ] Hypothesis round-trip property test over generated spans with every attribute value type.
+- [x] Hypothesis round-trip property test over generated spans with every attribute value type.
 - [ ] Outcome, verify, ship.
 
 ## Acceptance criteria
@@ -51,6 +51,7 @@ Adds `src/eagain/otlp/`, a hand-written reader and writer for the OTLP File form
 - **D9** [gap] plan M1.4: The writer leaves fields out when they hold their default (empty IDs and strings, zero counts and flags, empty lists, an unset status with no message, empty resource and scope). `traceId`, `spanId`, `name`, `kind`, `startTimeUnixNano` and `endTimeUnixNano` are always written. Keys are written in the order of the protobuf field numbers, with `,` and `:` as separators and non-ASCII characters left unescaped. Why: the output is compact, and a fixed form gives the byte-identical output that FR-3 AC7 later depends on.
 - **D10** [gap] plan M1.4: A string containing a lone surrogate (not valid Unicode) cannot be written. The writer raises `ValueError` naming the field. Why: OTLP strings must be valid UTF-8. Cleaning up such text belongs to whoever produces the span (for Claude Code, the M3 importer), not to the serialiser.
 - **D11** [gap] plan M1.4: A line that is not valid UTF-8 is a `malformed` line error. Why: OTLP/JSON is UTF-8, and one bad line must not stop the others being read.
+- **D12** [gap] plan M1.4: The writer raises `ValueError` when a span holds a value the reader would reject: IDs that are not lower-case hex of the right length or are all zero, and integers outside their protobuf range. It never cleans up or changes a value. Why: a writer that fixed up bad values quietly would hide producer bugs, and requiring lower-case IDs means the bytes depend only on the values.
 
 ## Verification
 

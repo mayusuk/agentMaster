@@ -194,3 +194,22 @@ def test_lone_surrogate_is_rejected_with_its_path() -> None:
     with pytest.raises(ValueError, match=r"resourceSpans\[0\]\.resource\.attributes\[0\]") as exc:
         encode_line(TracesData((rs,)))
     assert "bad" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    ("span", "field"),
+    [
+        (Span(trace_id="", span_id=ROOT), "traceId"),
+        (Span(trace_id=TRACE.upper(), span_id=ROOT), "traceId"),
+        (Span(trace_id="0" * 32, span_id=ROOT), "traceId"),
+        (Span(trace_id=TRACE, span_id="abc"), "spanId"),
+        (Span(trace_id=TRACE, span_id=ROOT, parent_span_id="zz"), "parentSpanId"),
+        (Span(trace_id=TRACE, span_id=ROOT, links=(Link(trace_id=TRACE, span_id=""),)), "spanId"),
+        (Span(trace_id=TRACE, span_id=ROOT, flags=2**32), "flags"),
+        (Span(trace_id=TRACE, span_id=ROOT, dropped_events_count=-1), "droppedEventsCount"),
+        (Span(trace_id=TRACE, span_id=ROOT, start_time_unix_nano=-1), "timestamp"),
+    ],
+)
+def test_spans_the_reader_would_reject_are_not_written(span: Span, field: str) -> None:
+    with pytest.raises(ValueError, match=field):
+        encode_line(TracesData((ResourceSpans(scope_spans=(ScopeSpans(spans=(span,)),)),)))

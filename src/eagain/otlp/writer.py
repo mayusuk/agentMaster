@@ -8,6 +8,8 @@ The same data always gives the same bytes:
   written;
 - separators are ``,`` and ``:``, with no spaces, and non-ASCII text is written
   as UTF-8, not escaped;
+- IDs must be lower-case hex, and values the reader would reject raise
+  ``ValueError``;
 - 64-bit integers (timestamps, ``intValue``) are decimal strings, and 32-bit
   integers are JSON numbers, as in the proto3 JSON mapping;
 - non-finite doubles are written as ``"NaN"``, ``"Infinity"`` and
@@ -22,6 +24,7 @@ from __future__ import annotations
 import base64
 import json
 import math
+import re
 from collections.abc import Iterable
 from typing import IO, Any
 
@@ -43,6 +46,7 @@ from eagain.otlp.data import (
 
 _INT64_MIN = -(2**63)
 _INT64_MAX = 2**63 - 1
+_HEX = re.compile(r"[0-9a-f]+")
 
 JsonObject = dict[str, Any]
 
@@ -115,11 +119,14 @@ def _scope(s: InstrumentationScope) -> JsonObject:
 
 
 def _span(s: Span) -> JsonObject:
-    obj: JsonObject = {"traceId": s.trace_id, "spanId": s.span_id}
+    obj: JsonObject = {
+        "traceId": _id(s.trace_id, 16, "traceId"),
+        "spanId": _id(s.span_id, 8, "spanId"),
+    }
     if s.trace_state:
         obj["traceState"] = s.trace_state
     if s.parent_span_id:
-        obj["parentSpanId"] = s.parent_span_id
+        obj["parentSpanId"] = _id(s.parent_span_id, 8, "parentSpanId")
     obj["name"] = s.name
     obj["kind"] = int(s.kind)
     obj["startTimeUnixNano"] = _fixed64(s.start_time_unix_nano)
@@ -128,16 +135,16 @@ def _span(s: Span) -> JsonObject:
     if s.events:
         obj["events"] = [_event(e) for e in s.events]
     if s.dropped_events_count:
-        obj["droppedEventsCount"] = s.dropped_events_count
+        obj["droppedEventsCount"] = _u32(s.dropped_events_count, "droppedEventsCount")
     if s.links:
         obj["links"] = [_link(link) for link in s.links]
     if s.dropped_links_count:
-        obj["droppedLinksCount"] = s.dropped_links_count
+        obj["droppedLinksCount"] = _u32(s.dropped_links_count, "droppedLinksCount")
     status = _status(s.status)
     if status:
         obj["status"] = status
     if s.flags:
-        obj["flags"] = s.flags
+        obj["flags"] = _u32(s.flags, "flags")
     return obj
 
 
@@ -152,12 +159,15 @@ def _event(e: Event) -> JsonObject:
 
 
 def _link(link: Link) -> JsonObject:
-    obj: JsonObject = {"traceId": link.trace_id, "spanId": link.span_id}
+    obj: JsonObject = {
+        "traceId": _id(link.trace_id, 16, "traceId"),
+        "spanId": _id(link.span_id, 8, "spanId"),
+    }
     if link.trace_state:
         obj["traceState"] = link.trace_state
     _put_attributes(obj, link.attributes, link.dropped_attributes_count)
     if link.flags:
-        obj["flags"] = link.flags
+        obj["flags"] = _u32(link.flags, "flags")
     return obj
 
 
@@ -177,7 +187,7 @@ def _put_attributes(obj: JsonObject, attributes: Attributes, dropped: int) -> No
     if attributes:
         obj["attributes"] = _key_values(attributes)
     if dropped:
-        obj["droppedAttributesCount"] = dropped
+        obj["droppedAttributesCount"] = _u32(dropped, "droppedAttributesCount")
 
 
 def _key_values(attributes: Attributes) -> list[JsonObject]:
@@ -212,6 +222,18 @@ def _double(v: float) -> float | str:
         return "NaN"
     if math.isinf(v):
         return "Infinity" if v > 0 else "-Infinity"
+    return v
+
+
+def _id(v: str, n_bytes: int, field: str) -> str:
+    if len(v) != 2 * n_bytes or not _HEX.fullmatch(v) or v.strip("0") == "":
+        raise ValueError(f"{field} must be {2 * n_bytes} lower-case hex characters, not all zero")
+    return v
+
+
+def _u32(v: int, field: str) -> int:
+    if not 0 <= v < 2**32:
+        raise ValueError(f"{field} {v} is outside the unsigned 32-bit range")
     return v
 
 
