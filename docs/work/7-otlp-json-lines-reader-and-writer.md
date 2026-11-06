@@ -3,7 +3,7 @@
 **Issue:** [#7](https://github.com/mayusuk/agentMaster/issues/7) (feature)
 **Branch:** `issue/7-otlp-json-lines-reader-and-writer`
 **Base:** `origin/main @ 698a463` (checked before branching)
-**Status:** In progress
+**Status:** Done
 
 ## Summary
 
@@ -30,7 +30,7 @@ Adds `src/eagain/otlp/`, a hand-written reader and writer for the OTLP File form
 - [x] Data types and writer, with the fixed field order and the omission rules, plus the determinism test.
 - [x] Reader: value decoding, IDs, timestamps, per-line errors, logs and metrics detection, plus tests for each kind of error and for continuing past a bad line.
 - [x] Hypothesis round-trip property test over generated spans with every attribute value type.
-- [ ] Outcome, verify, ship.
+- [x] Outcome, verify, ship.
 
 ## Acceptance criteria
 
@@ -63,4 +63,8 @@ Standard checks. The round-trip property test runs on the unit tier, with Hypoth
 
 ## Outcome
 
-_Filled in before shipping._
+- **Done:** `src/eagain/otlp/` has `data.py` (the trace message types), `writer.py` (`encode_line`, `dumps`, `write_lines`) and `reader.py` (`decode_line`, `read_lines`, `read_file`, with `Line`, `LineError`, `ErrorKind` and `OtlpFormatError`). There are 88 new unit tests in `tests/test_otlp_writer.py`, `tests/test_otlp_reader.py` and `tests/test_otlp_roundtrip.py`. The three Hypothesis property tests cover single-line round trips, whole-file round trips with line numbers, and byte-identical output for equal data. Every attribute value type is generated, including NaN, infinities, -0.0, empty values and nested arrays and kvlists. The comparison keeps types, so `True`, `1` and `1.0` stay distinct.
+- **Acceptance criteria:** round trip: `test_write_then_read_round_trips_any_span` and `test_write_then_read_round_trips_a_whole_file`. Line numbers and continuing past a bad line: `test_errors_carry_line_numbers_and_reading_continues_after_a_bad_line`, plus `test_malformed_lines_give_a_reason_with_the_path`, which covers 41 kinds of bad input. Byte-identical output: `test_writing_same_spans_twice_is_byte_identical` and `test_writing_equal_spans_gives_identical_bytes`.
+- **Also checked:** the OTLP tests pass on Python 3.11 locally as well as 3.14. 3.11 hits json's recursion limit on deep nesting, and that becomes a line error, not a crash.
+- **Deviations:** the writer now validates IDs and integer ranges (D12). It was added so that the writer can never produce a file its own reader rejects.
+- **Follow-ups:** none filed. #8 maps `ErrorKind.LOGS` and `ErrorKind.METRICS` to the FR-1 AC4 exit code, and FR-1 AC2's line numbers and reasons come from `LineError`.
